@@ -1,5 +1,11 @@
 # CodeMirror 6 LaTeX Visual Editor
 
+![Status: Experimental](https://img.shields.io/badge/status-experimental-red)
+
+> [!WARNING]
+> This repository is experimental.
+> Expect breaking changes and unstable APIs.
+
 **WIP** This package provides WYSIWYM visual editing for LaTeX documents in [CodeMirror 6](https://codemirror.net/6/), designed to work with academic writing workflows and document preparation.
 
 ## Features
