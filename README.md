@@ -1,16 +1,15 @@
 # CodeMirror Visual Markup Editor
 
-Visual (WYSIWYM) editing for markup languages in [CodeMirror 6](https://codemirror.net/6/).
-LaTeX and Typst ship in the box; other languages plug in without touching the editor core.
+Visual (WYSIWYM) editing for LaTeX and Typst languages in [CodeMirror 6](https://codemirror.net/6/).
 
-The source document is always authoritative. Visual mode is a decoration layer over the real
+The source document is always authoritative and visual mode is a decoration layer over the real
 text, so every edit is an ordinary CodeMirror transaction and nothing is ever re-serialised
 from a mirrored DOM tree.
 
 ## Install
 
 ```
-npm install codemirror-latex-visual
+npm install codemirror-visual-markup
 ```
 
 `mathlive` is an optional peer dependency, loaded on demand the first time a formula renders.
@@ -20,8 +19,8 @@ npm install codemirror-latex-visual
 ```js
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { DualVisualEditor } from 'codemirror-latex-visual';
-import 'codemirror-latex-visual/dist/styles.css';
+import { DualVisualEditor } from 'codemirror-visual-markup';
+import 'codemirror-visual-markup/dist/styles.css';
 
 const view = new EditorView({
   state: EditorState.create({ doc: '\\section{Title}\n\nMath: $E = mc^2$.' })
@@ -47,32 +46,12 @@ const editor = new DualVisualEditor(document.querySelector('#app'), view, {
 Placing the cursor inside a construct reveals its markup inline, so hidden syntax is always
 reachable without leaving visual mode.
 
-## Architecture
-
-```
-src/core/       tokens, scanner, tokenizer, language registry, config
-src/languages/  latex/, typst/
-src/view/       decorations, widgets, theme, math hover, visual extension
-src/ui/         dual editor, toolbar, table selector
-```
-
-Parsing produces a token tree carrying **absolute document offsets**. `buildDecorations`
-walks that tree and emits:
-
-- `Decoration.mark` on token bodies, which nest natively to any depth
-- `Decoration.replace` over delimiter ranges to hide markup
-- `Decoration.line` for block constructs such as headings and environments
-- atomic widgets only where content is genuinely opaque (math, tables)
-
-Because positions are absolute, widget edits write back with `view.posAtDOM` against an exact
-range rather than searching the document for a matching substring.
-
 ## Adding a language
 
 A language is a set of rules plus a style mapping:
 
 ```ts
-import { registerLanguage, Language } from 'codemirror-latex-visual';
+import { registerLanguage, Language } from 'codemirror-visual-markup';
 
 const markdown: Language = {
   id: 'markdown',
@@ -108,7 +87,7 @@ Toolbar items use the same contract as TeXlyre's `PluginToolbar`, so the bundled
 can be swapped for it without touching this package:
 
 ```ts
-import { toolbarEntries, scopeAt, isToolbarButton, getLanguage } from 'codemirror-latex-visual';
+import { toolbarEntries, scopeAt, isToolbarButton, getLanguage } from 'codemirror-visual-markup';
 
 const language = getLanguage('latex');
 const scope = scopeAt(view.state, view.state.selection.main.head, language);
@@ -142,7 +121,7 @@ Feed remote positions into the `revealRanges` facet to suppress the widget where
 collaborator is working:
 
 ```ts
-import { revealAt } from 'codemirror-latex-visual';
+import { revealAt } from 'codemirror-visual-markup';
 
 const remote = awareness
   .getStates()
@@ -179,7 +158,7 @@ local widget edit to be rejected rather than overwrite the remote value.
 package never needs to know how your files are stored:
 
 ```ts
-import { createImageResolver, imageResolver } from 'codemirror-latex-visual';
+import { createImageResolver, imageResolver } from 'codemirror-visual-markup';
 
 const resolver = createImageResolver(
   () => currentFilePath,
@@ -226,7 +205,7 @@ attached. Widgets only exist where the caret is not.
 reveal facet so the affected construct renders as source:
 
 ```ts
-import { revealFrom } from 'codemirror-latex-visual';
+import { revealFrom } from 'codemirror-visual-markup';
 import { forEachDiagnostic, lintState } from '@codemirror/lint';
 
 revealFrom([lintState], state => {
@@ -239,20 +218,6 @@ revealFrom([lintState], state => {
 `revealFrom(deps, compute)` is a thin wrapper over `Facet.compute`, so any state — LSP results,
 search matches, a review pane's selection — can force a construct open without this package
 depending on it.
-
-## LaTeX macro signatures
-
-The parser is a lossless offset-preserving scanner, not an AST adapter, because
-`@unified-latex` drops `position` on every `argument` node and ends a macro node at the command
-name — the body range needed for decorations is not recoverable without re-scanning. If you
-already depend on unified-latex, feed its CTAN records in to widen argument handling:
-
-```ts
-import { setMacroSignatures } from 'codemirror-latex-visual';
-import { macros } from '@unified-latex/unified-latex-ctan/package/xcolor';
-
-setMacroSignatures(macros);
-```
 
 ## Scripts
 
