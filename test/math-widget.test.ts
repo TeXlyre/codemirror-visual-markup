@@ -91,6 +91,7 @@ describe('math widget editing', () => {
 
   it('parses Typst math for MathLive and commits Typst output', () => {
     const view = mount('before\n$ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $\nafter', 'typst');
+
     const mathfield = field(view);
 
     expect(mathfield.lastSetValueFormat).toBe('ascii-math');
@@ -100,9 +101,11 @@ describe('math widget editing', () => {
     container(view).dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(mathfield.lastGetValueFormat).toBe('typst');
+
     expect(view.state.doc.toString()).toBe('before\n$ integral_0^1 x dif x $\nafter');
 
     const roundTrip = mount('before\n$ integral_(-infinity)^infinity e^(-x^2) dif x = sqrt(pi) $\nafter', 'typst');
+
     expect(field(roundTrip).lastSetValue).toBe('int_(-oo)^oo e^(-x^2) dx = sqrt(pi)');
   });
 });
