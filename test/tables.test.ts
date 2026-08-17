@@ -301,7 +301,7 @@ describe('table variants', () => {
     expect(Array.from(rows[1].querySelectorAll('.cm-lv-cell'), cell => cell.textContent?.trim())).toEqual([
       'A',
       'A long description that belongs to the same logical row',
-      '82%'
+      '82\\%'
     ]);
   });
 
