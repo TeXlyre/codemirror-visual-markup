@@ -31,6 +31,7 @@ export const math: Rule = (source, pos, ctx) => {
     if (!range) continue;
     const body = inner(range, open.length, close.length);
     if (body.to <= body.from) continue;
+    if (/\n[ \t]*\n/.test(source.slice(body.from, body.to))) continue;
     return { kind: 'math', from: range.from, to: range.to, display, body, meta: { open, close } };
   }
   return null;
@@ -57,7 +58,7 @@ export const environment: Rule = (source, pos, ctx) => {
     args: headerArgs.args
   };
 
-  if (!VERBATIM_ENVIRONMENTS.has(name) && token.kind !== 'table') {
+  if (!VERBATIM_ENVIRONMENTS.has(name)) {
     token.children = ctx.parse(token.body!.from, token.body!.to);
   }
   if (MATH_ENVIRONMENTS.has(name)) {

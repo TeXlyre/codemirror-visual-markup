@@ -1,8 +1,14 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { autocompletion } from '@codemirror/autocomplete';
+import { lintGutter, linter } from '@codemirror/lint';
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
 
-import { DualVisualEditor, listLanguages } from '../../..';
+import { latex as latexSupport, latexCompletionSource, latexLinter } from 'codemirror-lang-latex';
+import { typst as typstSupport, typstCompletionSource } from 'codemirror-lang-typst';
+
+import { DualVisualEditor, createImageResolver, imageResolver, listLanguages } from '../../..';
 
 import '../../../dist/styles.css';
 import './styles.css';
@@ -24,10 +30,20 @@ $$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
   \\end{enumerate}
 \\end{itemize}
 
-\\begin{tabular}{ll}
-  Name & Value \\\\
-  Alpha & 1 \\\\
+\\begin{tabular}{lll}
+  Symbol & Value & Note \\\\
+  $\\alpha$ & 1.24 & \\textbf{bold cell} \\\\
+  $\\beta$ & $$\\frac{1}{2}$$ & plain \\\\
 \\end{tabular}
+
+\\begin{figure}
+  \\includegraphics{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
+  \\caption{A caption stays editable}
+\\end{figure}
+
+\\begin{lstlisting}
+int main() { return 0; }
+\\end{lstlisting}
 
 % comments stay dimmed
 \\textcolor{red}{Coloured text} and \\unknowncommand{raw}.`,
@@ -44,23 +60,52 @@ $ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $
 - Second item
 - Nested entries work too
 
+#figure(
+  image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png"),
+  caption: [A caption stays editable],
+)
+
 #emph[Call with content] and #text(fill: red)[coloured].
 
 // comments stay dimmed
 \`inline raw\` stays monospaced.`
 };
 
+const LANGUAGE_SUPPORT = {
+  latex: () => [
+    latexSupport(),
+    autocompletion({ override: [latexCompletionSource] }),
+    linter(latexLinter()),
+    lintGutter()
+  ],
+  typst: () => [
+    typstSupport(),
+    autocompletion({ override: [typstCompletionSource] })
+  ]
+};
+
+const resolver = createImageResolver(
+  () => '/main.tex',
+  async resolvedPath => resolvedPath
+);
+
 let editor;
-let view;
 
 function mount(language) {
   const host = document.getElementById('editor');
   host.innerHTML = '';
 
-  view = new EditorView({
+  const view = new EditorView({
     state: EditorState.create({
       doc: SAMPLES[language],
-      extensions: [lineNumbers(), history(), keymap.of([...defaultKeymap, ...historyKeymap])]
+      extensions: [
+        lineNumbers(),
+        history(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        LANGUAGE_SUPPORT[language](),
+        imageResolver.of(resolver)
+      ]
     })
   });
 

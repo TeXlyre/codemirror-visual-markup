@@ -119,6 +119,31 @@ describe.each([
     }
   });
 
+  it('never hides a line break outside a block replacement', () => {
+    const random = mulberry(4242);
+
+    for (let iteration = 0; iteration < 200; iteration++) {
+      const source = randomSource(random, 1 + Math.floor(random() * 15));
+      const state = EditorState.create({
+        doc: source,
+        selection: { anchor: Math.floor(random() * (source.length + 1)) }
+      });
+
+      const { decorations } = buildDecorations(state, { language, showCommands: false });
+      const cursor = decorations.iter();
+
+      while (cursor.value) {
+        const spec = cursor.value.spec as { class?: string; block?: boolean };
+        const isInlineReplace = spec.class === undefined && spec.block !== true;
+
+        if (isInlineReplace && cursor.to > cursor.from) {
+          expect(source.slice(cursor.from, cursor.to)).not.toContain('\n');
+        }
+        cursor.next();
+      }
+    }
+  });
+
   it('bounds nesting depth without losing text', () => {
     const open = language.id === 'latex' ? '\\textbf{' : '#emph[';
     const close = language.id === 'latex' ? '}' : ']';

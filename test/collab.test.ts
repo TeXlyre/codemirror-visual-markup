@@ -73,10 +73,6 @@ describe('remote presence under visual decorations', () => {
     expect(rendered(mount(doc, doc.lastIndexOf('$') + 2)).caret).toBe(1);
   });
 
-  it('hides remote carets inside a table widget', () => {
-    const doc = ['intro', '', '\\begin{tabular}{ll}', '  one & two \\\\', '\\end{tabular}'].join('\n');
-    expect(rendered(mount(doc, doc.indexOf('two')))).toEqual({ caret: 0, selection: 0 });
-  });
 
   it('shows remote carets once their position is revealed', () => {
     const doc = 'formula $a^2$ here';
@@ -107,79 +103,19 @@ describe('remote presence under visual decorations', () => {
   });
 });
 
-describe('per-cell table granularity', () => {
+describe('presence inside tables', () => {
   const doc = ['intro', '', '\\begin{tabular}{ll}', '  one & two \\\\', '  three & four \\\\', '\\end{tabular}'].join('\n');
 
-  const mountRevealed = (positions: number[], selection?: { anchor: number; head: number }) => {
+  it('renders a remote caret in the cell it occupies', () => {
+    const view = mount(doc, doc.indexOf('four'));
+    expect(rendered(view)).toEqual({ caret: 1, selection: 1 });
+  });
+
+  it('renders carets for several collaborators at once', () => {
     const view = new EditorView({
       state: EditorState.create({
         doc,
-        selection: selection ?? { anchor: 0 },
-        extensions: [visualExtension(), revealAt(positions)]
-      }),
-      parent: document.body
-    });
-    view.dispatch({
-      effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
-    });
-    return view;
-  };
-
-  const activeCells = (view: EditorView) =>
-    Array.from(view.contentDOM.querySelectorAll('td.cm-lv-cell-active')).map(
-      cell => (cell as HTMLElement).dataset.cell
-    );
-
-  it('keeps the table rendered when a caret is inside it', () => {
-    const view = mountRevealed([doc.indexOf('two')]);
-    expect(view.contentDOM.querySelector('.cm-lv-table')).not.toBeNull();
-  });
-
-  it('marks only the cell containing the caret', () => {
-    expect(activeCells(mountRevealed([doc.indexOf('two')]))).toEqual(['0:1']);
-    expect(activeCells(mountRevealed([doc.indexOf('three')]))).toEqual(['1:0']);
-    expect(activeCells(mountRevealed([doc.indexOf('four')]))).toEqual(['1:1']);
-  });
-
-  it('marks several cells for several collaborators', () => {
-    expect(activeCells(mountRevealed([doc.indexOf('one'), doc.indexOf('four')]))).toEqual(['0:0', '1:1']);
-  });
-
-  it('moves the highlight without rebuilding the table', () => {
-    const view = mountRevealed([doc.indexOf('one')]);
-    const before = view.contentDOM.querySelector('.cm-lv-table');
-    expect(activeCells(view)).toEqual(['0:0']);
-
-    view.dispatch({ effects: StateEffect.appendConfig.of(revealAt([doc.indexOf('four')])) });
-
-    expect(view.contentDOM.querySelector('.cm-lv-table')).toBe(before);
-    expect(activeCells(view)).toEqual(expect.arrayContaining(['1:1']));
-  });
-
-  it('still falls back to source for a real selection over the table', () => {
-    const view = mountRevealed([], { anchor: doc.indexOf('one'), head: doc.indexOf('four') });
-    expect(view.contentDOM.querySelector('.cm-lv-table')).toBeNull();
-  });
-
-  it('renders the table normally when nobody is inside it', () => {
-    const view = mountRevealed([]);
-    expect(view.contentDOM.querySelector('.cm-lv-table')).not.toBeNull();
-    expect(activeCells(view)).toEqual([]);
-  });
-});
-
-describe('collaborator colours', () => {
-  const doc = ['intro', '', '\\begin{tabular}{ll}', '  one & two \\\\', '\\end{tabular}'].join('\n');
-
-  it('applies each collaborator colour to their cell', () => {
-    const view = new EditorView({
-      state: EditorState.create({
-        doc,
-        extensions: [
-          visualExtension(),
-          revealAt([doc.indexOf('one')], '#ff0000'),
-          revealAt([doc.indexOf('two')], '#00ff00')
-        ]
+        extensions: [visualExtension(), remoteCaretAt(doc.indexOf('one')), remoteCaretAt(doc.indexOf('four'))]
       }),
       parent: document.body
     });
@@ -187,7 +123,12 @@ describe('collaborator colours', () => {
       effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
     });
 
-    const cells = Array.from(view.contentDOM.querySelectorAll('td.cm-lv-cell-active')) as HTMLElement[];
-    expect(cells.map(cell => cell.style.getPropertyValue('--lv-cell-color'))).toEqual(['#ff0000', '#00ff00']);
+    expect(view.contentDOM.querySelectorAll('.remote-caret')).toHaveLength(2);
+  });
+
+  it('keeps the table rendered while a collaborator edits it', () => {
+    const view = mount(doc, doc.indexOf('four'));
+    expect(view.contentDOM.querySelectorAll('.cm-lv-cell').length).toBeGreaterThan(0);
+    expect(view.contentDOM.textContent).not.toContain('tabular');
   });
 });

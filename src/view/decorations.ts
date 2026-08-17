@@ -39,17 +39,20 @@ export function revealFrom(
 }
 
 class MarkerWidget extends WidgetType {
-  constructor(private label: string) {
+  constructor(
+    private label: string,
+    private className = 'cm-lv-marker'
+  ) {
     super();
   }
 
   eq(other: WidgetType): boolean {
-    return other instanceof MarkerWidget && other.label === this.label;
+    return other instanceof MarkerWidget && other.label === this.label && other.className === this.className;
   }
 
   toDOM(): HTMLElement {
     const element = document.createElement('span');
-    element.className = 'cm-lv-marker';
+    element.className = this.className;
     element.textContent = this.label;
     return element;
   }
@@ -74,7 +77,14 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
 
   const hide = (from: number, to: number) => {
     if (to <= from || options.showCommands) return;
-    concealed.push(expandToLine(state, source, from, to));
+
+    let start = from;
+    while (start < to) {
+      const line = state.doc.lineAt(start);
+      const end = Math.min(to, line.to);
+      if (end > start) concealed.push({ from: start, to: end });
+      start = line.to + 1;
+    }
   };
 
   const emit = (list: Token[]) => {
@@ -86,20 +96,18 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
         continue;
       }
 
-      const here = overlap(local, token.from, token.to);
-      const remote = overlap(external, token.from, token.to);
-      const inScope = here.length > 0 || remote.length > 0;
-      const granular = Boolean(style.granular) && here.length === 0;
+      const inScope = isRevealed(token.from, token.to);
 
-      if (style.widget && !options.showCommands && (!inScope || granular)) {
+      if (style.widget && !options.showCommands && !inScope) {
         const widget = createWidget(style.widget, {
           token,
           source,
           state,
-          language: options.language,
-          reveal: granular ? remote : []
+          language: options.language
         });
-        if (widget) {
+        const spansLines = state.doc.lineAt(token.from).number !== state.doc.lineAt(token.to).number;
+
+        if (widget && (style.block || !spansLines)) {
           const decoration = Decoration.replace({ widget, block: style.block });
           decorations.push(decoration.range(token.from, token.to));
           atomic.push(decoration.range(token.from, token.to));
@@ -127,14 +135,25 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
         }
       }
 
+      if (token.kind === 'table' && !options.showCommands && !inScope) {
+        layoutTable(state, source, options.language, token, decorations, replaced, hide);
+      }
+
       if (token.children && !style.keepSyntax) emit(token.children);
     }
   };
 
   emit(tokens);
 
-  for (const span of subtract(merge(concealed), merge(replaced))) {
+  const spans = subtract(merge(concealed), merge(replaced));
+
+  for (const span of spans) {
     decorations.push(hidden.range(span.from, span.to));
+
+    const line = state.doc.lineAt(span.from);
+    if (span.from === line.from && span.to === line.to && line.length > 0) {
+      decorations.push(Decoration.line({ class: 'cm-lv-syntax-line' }).range(line.from));
+    }
   }
 
   return {
@@ -169,6 +188,71 @@ function applyStyle(
   if (body.to > body.from) {
     decorations.push(Decoration.mark({ class: style.class }).range(body.from, body.to));
   }
+}
+
+function layoutTable(
+  state: EditorState,
+  source: string,
+  language: Language,
+  token: Token,
+  decorations: CMRange<Decoration>[],
+  replaced: Range[],
+  hide: (from: number, to: number) => void
+): void {
+  const rows = language.table?.ranges?.(source, token);
+  if (!rows || !token.body) return;
+
+  const widths: number[] = [];
+  for (const row of rows) {
+    row.forEach((cell, column) => {
+      widths[column] = Math.max(widths[column] ?? 0, trim(source, cell).length);
+    });
+  }
+
+  let previous = token.body.from;
+
+  for (const row of rows) {
+    row.forEach((cell, column) => {
+      if (cell.from > previous) separate(state, decorations, replaced, previous, cell.from);
+
+      const content = trim(source, cell);
+      if (content.to > content.from) {
+        decorations.push(
+          Decoration.mark({
+            class: 'cm-lv-cell',
+            attributes: { style: `min-width:${widths[column]}ch` }
+          }).range(content.from, content.to)
+        );
+      }
+
+      previous = cell.to;
+    });
+  }
+
+  hide(previous, token.body.to);
+}
+
+function separate(
+  state: EditorState,
+  decorations: CMRange<Decoration>[],
+  replaced: Range[],
+  from: number,
+  to: number
+): void {
+  const line = state.doc.lineAt(from);
+  const end = Math.min(to, line.to);
+
+  if (end > from) {
+    decorations.push(Decoration.replace({ widget: new MarkerWidget('', 'cm-lv-col-sep') }).range(from, end));
+    replaced.push({ from, to: end });
+  }
+}
+
+function trim(source: string, range: Range): Range & { length: number } {
+  let { from, to } = range;
+  while (from < to && /\s/.test(source[from])) from++;
+  while (to > from && /\s/.test(source[to - 1])) to--;
+  return { from, to, length: to - from };
 }
 
 function expandToLine(state: EditorState, source: string, from: number, to: number): Range {

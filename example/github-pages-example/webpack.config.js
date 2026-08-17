@@ -29,6 +29,9 @@ module.exports = {
       template: './src/index.html'
     })
   ],
+  experiments: {
+    asyncWebAssembly: true
+  },
   performance: {
     hints: false
   },
@@ -38,6 +41,8 @@ module.exports = {
       '@codemirror/view': single('@codemirror/view'),
       '@codemirror/language': single('@codemirror/language'),
       '@codemirror/commands': single('@codemirror/commands'),
+      '@codemirror/autocomplete': single('@codemirror/autocomplete'),
+      '@codemirror/lint': single('@codemirror/lint'),
       mathlive: single('mathlive')
     }
   }

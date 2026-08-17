@@ -224,24 +224,27 @@
   border-radius: 4px;
 }
 
-.cm-lv-table table {
-  border-collapse: collapse;
-  margin: var(--lv-spacing-widget);
+.cm-lv-table {
+  background: color-mix(in srgb, var(--lv-table) 6%, transparent);
+  border-left: 3px solid var(--lv-table);
 }
 
-.cm-lv-table td {
-  padding: var(--lv-spacing-cell);
-  border: 1px solid var(--lv-border);
-  min-width: 60px;
+.cm-lv-cell {
+  display: inline-block;
+  padding-right: 0.5em;
 }
 
-.cm-lv-table td.cm-lv-cell-active {
-  box-shadow: inset 0 0 0 2px var(--lv-cell-color, var(--lv-primary));
+.cm-lv-col-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.1em;
+  margin: 0 0.6em;
+  vertical-align: text-bottom;
+  background: var(--lv-border);
 }
 
-.cm-lv-table td:focus {
-  outline: 2px solid var(--lv-primary);
-  outline-offset: -2px;
+.cm-lv-syntax-line {
+  line-height: 0.5em;
 }
 
 math-field {

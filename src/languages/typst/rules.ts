@@ -50,6 +50,7 @@ export const math: Rule = (source, pos) => {
 
   const body = inner(range, 1, 1);
   if (body.to <= body.from) return null;
+  if (/\n[ \t]*\n/.test(source.slice(body.from, body.to))) return null;
 
   const display = /^\s/.test(source.slice(body.from, body.from + 1)) && /\s$/.test(source.slice(body.to - 1, body.to));
   return { kind: 'math', from: range.from, to: range.to, display, body, meta: { open: '$', close: '$' } };

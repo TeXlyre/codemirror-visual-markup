@@ -78,7 +78,7 @@ describe('editor services under visual mode', () => {
     expect(revealed.contentDOM.querySelectorAll('.cm-lv-math')).toHaveLength(0);
   });
 
-  it('keeps the local caret able to reach table source', () => {
+  it('renders table content as real text so services reach it', () => {
     const doc = ['intro', '', '\\begin{tabular}{ll}', '  one & two \\\\', '\\end{tabular}'].join('\n');
     const view = new EditorView({
       state: EditorState.create({ doc, selection: { anchor: 0 }, extensions: [visualExtension()] }),
@@ -88,9 +88,27 @@ describe('editor services under visual mode', () => {
       effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
     });
 
-    expect(view.contentDOM.querySelectorAll('.cm-lv-table')).toHaveLength(1);
+    expect(view.contentDOM.querySelectorAll('.cm-lv-cell').length).toBeGreaterThan(0);
+    expect(view.contentDOM.textContent).toContain('one');
+    expect(view.contentDOM.textContent).toContain('two');
+    expect(view.contentDOM.textContent).not.toContain('begin{tabular}');
+  });
 
-    view.dispatch({ selection: { anchor: doc.indexOf('two') } });
-    expect(view.contentDOM.querySelectorAll('.cm-lv-table')).toHaveLength(0);
+  it('reaches inside table cells now that they are real text', () => {
+    const doc = ['intro', '', '\\begin{tabular}{ll}', '  one & two \\\\', '\\end{tabular}'].join('\n');
+    const from = doc.indexOf('two');
+    const view = new EditorView({
+      state: EditorState.create({
+        doc,
+        selection: { anchor: 0 },
+        extensions: [visualExtension(), marks(from, from + 3)]
+      }),
+      parent: document.body
+    });
+    view.dispatch({
+      effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
+    });
+
+    expect(view.contentDOM.querySelectorAll('.lsp-mark')).toHaveLength(1);
   });
 });

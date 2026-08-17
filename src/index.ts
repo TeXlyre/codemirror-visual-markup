@@ -45,7 +45,7 @@ export type { RevealRange } from './view/decorations';
 export type { BuildOptions, BuildResult } from './view/decorations';
 export { createWidget, registerWidget, replaceRange } from './view/widget-registry';
 export type { WidgetContext, WidgetFactory } from './view/widget-registry';
-export { ImageWidget, MathWidget, TableWidget } from './view/widgets';
+export { ImageWidget, MathWidget } from './view/widgets';
 export { createImageResolver, imageResolver, isExternal, resolveImagePath } from './view/images';
 export type { ImageFetcher, ImageResolver } from './view/images';
 export { createEditableMath, preloadMath } from './view/math-field';

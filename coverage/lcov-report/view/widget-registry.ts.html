@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>27/36</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>2/3</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>2/3</span>
+                <span class='fraction'>35/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">75% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>6/8</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>3/3</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>27/36</span>
+                <span class='fraction'>35/35</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -98,8 +98,7 @@
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L36'></a><a href='#L36'>36</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -116,37 +115,35 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
-<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">667x</span>
+<span class="cline-any cline-yes">667x</span>
+<span class="cline-any cline-yes">667x</span>
+<span class="cline-any cline-yes">667x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">653x</span>
-<span class="cline-any cline-yes">653x</span>
-<span class="cline-any cline-yes">653x</span>
-<span class="cline-any cline-yes">653x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { EditorState } from '@codemirror/state';
 import { EditorView, WidgetType } from '@codemirror/view';
 import { Language, WidgetKind } from '../core/language';
 import { Token } from '../core/tokens';
-import { RevealRange } from './decorations';
+&nbsp;
 &nbsp;
 export interface WidgetContext {
   token: Token;
   source: string;
   state: EditorState;
   language: Language;
-  reveal: readonly RevealRange[];
 }
 &nbsp;
 export type WidgetFactory = (context: WidgetContext) =&gt; WidgetType | null;
@@ -162,15 +159,15 @@ export function createWidget(kind: WidgetKind, context: WidgetContext): WidgetTy
   return factory ? factory(context) <span class="branch-0 cbranch-no" title="branch not covered" >: null;</span>
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export function replaceRange(view: EditorView, dom: HTMLElement, original: string, replacement: string): boolean {</span></span>
-<span class="cstat-no" title="statement not covered" >  if (original === replacement) return false;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const pos = view.posAtDOM(dom);</span>
-<span class="cstat-no" title="statement not covered" >  if (pos &lt; 0 || view.state.doc.sliceString(pos, pos + original.length) !== original) return false;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  view.dispatch({ changes: { from: pos, to: pos + original.length, insert: replacement } });</span>
-<span class="cstat-no" title="statement not covered" >  return true;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
+export function replaceRange(view: EditorView, dom: HTMLElement, original: string, replacement: string): boolean {
+  if (original === replacement) return false;
+&nbsp;
+  const pos = view.posAtDOM(dom);
+  if (pos &lt; 0 || view.state.doc.sliceString(pos, pos + original.length) !== original) <span class="branch-0 cbranch-no" title="branch not covered" >return false;</span>
+&nbsp;
+  view.dispatch({ changes: { from: pos, to: pos + original.length, insert: replacement } });
+  return true;
+}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -178,7 +175,7 @@ export function createWidget(kind: WidgetKind, context: WidgetContext): WidgetTy
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-17T06:43:54.166Z
+                at 2026-08-17T08:04:29.050Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -2,14 +2,13 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, WidgetType } from '@codemirror/view';
 import { Language, WidgetKind } from '../core/language';
 import { Token } from '../core/tokens';
-import { RevealRange } from './decorations';
+
 
 export interface WidgetContext {
   token: Token;
   source: string;
   state: EditorState;
   language: Language;
-  reveal: readonly RevealRange[];
 }
 
 export type WidgetFactory = (context: WidgetContext) => WidgetType | null;

@@ -103,7 +103,7 @@ function style(token: Token): TokenStyle | null {
     case 'math':
       return { widget: 'math', block: token.display };
     case 'table':
-      return { widget: 'table', block: true, granular: true };
+      return { class: 'cm-lv-table', block: true };
     case 'heading':
       return { class: `cm-lv-heading cm-lv-h${token.level}`, block: true };
     case 'item':
