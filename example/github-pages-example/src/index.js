@@ -4,27 +4,23 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { lintGutter } from '@codemirror/lint';
 import { defaultHighlightStyle, foldGutter, syntaxHighlighting } from '@codemirror/language';
 
-import { DualVisualEditor, createImageResolver, imageResolver, listLanguages } from '../../..';
+import { DualVisualEditor, listLanguages } from '../../..';
 
 import '../../../dist/styles.css';
 import './styles.css';
 
+const IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png';
+
 const SAMPLES = {
   latex: `\\section{Introduction}
 
-Text with \\textbf{bold \\textit{and nested \\underline{emphasis}}} plus inline math $E = mc^2$.
+Text with \\textbf{bold}, \\textit{italic}, \\underline{underlined}, and \\textcolor{red}{coloured text}.
 
-\\subsection{Equations}
+Inline math $E = mc^2$ and a display equation:
 
 $$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
 
-\\begin{itemize}
-  \\item First item with $\\alpha + \\beta$
-  \\item Second item
-  \\begin{enumerate}
-    \\item Nested list entry
-  \\end{enumerate}
-\\end{itemize}
+\\subsection{Table}
 
 \\begin{tabular}{lll}
   Symbol & Value & Note \\\\
@@ -32,56 +28,55 @@ $$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
   $\\beta$ & $$\\frac{1}{2}$$ & plain \\\\
 \\end{tabular}
 
+\\subsection{Figure}
+
 \\begin{figure}
   \\begin{subfigure}{0.46\\textwidth}
-    \\includegraphics[width=\\linewidth]{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
+    \\includegraphics[width=\\linewidth]{${IMAGE}}
     \\caption{First panel}
   \\end{subfigure}\\hfill
   \\begin{subfigure}{0.46\\textwidth}
-    \\includegraphics[width=\\linewidth]{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
+    \\includegraphics[width=\\linewidth]{${IMAGE}}
     \\caption{Second panel}
   \\end{subfigure}
-  \\caption{Subfigures stay grouped and aligned}
+  \\caption{Two editable subfigures}
 \\end{figure}
 
-\\begin{lstlisting}
-int main() { return 0; }
-\\end{lstlisting}
+\\begin{itemize}
+  \\item First item
+  \\item Second item with $\\alpha + \\beta$
+\\end{itemize}`,
 
-% comments stay dimmed
-\\textcolor{red}{Coloured text} and \\unknowncommand{raw}.`,
+  typst: `= Introduction
 
-  typst: `#import "@preview/subpar:0.2.2"
+Text with *bold*, _italic_, and #text(fill: red)[coloured text].
 
-= Introduction
-
-Text with *bold _and nested_* plus inline math $E = m c^2$.
-
-== Equations
+Inline math $E = m c^2$ and a display equation:
 
 $ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $
 
-- First item with $alpha + beta$
-- Second item
-- Nested entries work too
+== Table
 
-#subpar.grid(
-  figure(
-    image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png", width: 80%),
-    caption: [First panel],
-  ), <a>,
-  figure(
-    image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png", width: 80%),
-    caption: [Second panel],
-  ), <b>,
-  columns: (1fr, 1fr),
-  caption: [Two subfigures side by side],
+#table(
+  columns: 3,
+  table.header([Symbol], [Value], [Note]),
+  [$alpha$], [1.24], [bold cell],
+  [$beta$], [$ 1/2 $], [plain],
 )
 
-#emph[Call with content] and #text(fill: red)[coloured].
+== Figure
 
-// comments stay dimmed
-\`inline raw\` stays monospaced.`
+#figure(
+  grid(
+    columns: 2,
+    figure(image("${IMAGE}", width: 80%), caption: [First panel]),
+    figure(image("${IMAGE}", width: 80%), caption: [Second panel]),
+  ),
+  caption: [Two editable subfigures],
+)
+
+- First item
+- Second item with $alpha + beta$`
 };
 
 const LANGUAGE_SUPPORT = {
@@ -95,13 +90,9 @@ const LANGUAGE_SUPPORT = {
   }
 };
 
-const resolver = createImageResolver(
-  () => '/main.tex',
-  async resolvedPath => resolvedPath
-);
-
 let editor;
 let generation = 0;
+let theme = 'light';
 
 async function mount(language) {
   const token = ++generation;
@@ -124,8 +115,7 @@ async function mount(language) {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        support,
-        imageResolver.of(resolver)
+        support
       ]
     })
   });
@@ -133,7 +123,7 @@ async function mount(language) {
   editor = new DualVisualEditor(host, view, {
     language,
     initialMode: 'visual',
-    theme: document.body.classList.contains('theme-dark') ? 'dark' : 'light',
+    theme,
     onModeChange: mode => {
       document.getElementById('mode').textContent = mode;
     }
@@ -153,19 +143,17 @@ function setupControls() {
   picker.addEventListener('change', () => {
     editor?.destroy();
     editor = undefined;
+    document.getElementById('mode').textContent = 'visual';
     mount(picker.value);
   });
 
   document.getElementById('theme').addEventListener('click', () => {
-    const dark = document.body.classList.toggle('theme-dark');
-    editor?.setTheme(dark ? 'dark' : 'light');
+    theme = theme === 'light' ? 'dark' : 'light';
+    editor?.setTheme(theme);
   });
 }
 
 function start() {
-  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    document.body.classList.add('theme-dark');
-  }
   setupControls();
   mount('latex');
 }

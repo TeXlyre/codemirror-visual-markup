@@ -1,233 +1,305 @@
-# CodeMirror Visual Markup Editor
+# CodeMirror 6 Visual Markup Support
 
-Visual (WYSIWYM) editing for LaTeX and Typst languages in [CodeMirror 6](https://codemirror.net/6/).
+This package provides visual (WYSIWYM) editing for LaTeX and Typst in the [CodeMirror 6](https://codemirror.net/6/) editor.
 
-The source document is always authoritative and visual mode is a decoration layer over the real
-text, so every edit is an ordinary CodeMirror transaction and nothing is ever re-serialised
-from a mirrored DOM tree.
+Visual mode decorates the live CodeMirror document instead of maintaining a separate editable DOM tree. The source remains authoritative, and edits are applied as normal CodeMirror transactions.
 
-## Install
+## Features
 
-```
+- Source and visual editing modes over the same CodeMirror document
+- Built-in visual adapters for LaTeX and Typst
+- Visual headings, emphasis, lists, colors, tables, figures, and captions
+- Interactive equations with optional [MathLive](https://mathlive.io/)
+- Table layouts with editable cells and row/column controls
+- Single and compound figure layouts, including subfigures and captions
+- Inline source reveal when the cursor enters visually concealed markup
+- Image resolution for external URLs and project-relative files
+- Light and dark themes with configurable colors and spacing
+- Built-in formatting toolbar with APIs for replacing it with custom UI
+- Extensible language, widget, table, and figure adapters
+
+CodeMirror language support can be used alongside the visual layer for syntax highlighting, completion, folding, linting, and other editor services.
+
+## Installation
+
+```bash
 npm install codemirror-visual-markup
 ```
 
-`mathlive` is an optional peer dependency, loaded on demand the first time a formula renders.
+Import the bundled visual styles:
+
+```javascript
+import 'codemirror-visual-markup/dist/styles.css';
+```
+
+`mathlive` is an optional peer dependency. Install it when interactive equation editing is required:
+
+```bash
+npm install mathlive
+```
 
 ## Usage
 
-```js
+```javascript
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { latex } from 'codemirror-lang-latex';
 import { DualVisualEditor } from 'codemirror-visual-markup';
 import 'codemirror-visual-markup/dist/styles.css';
 
 const view = new EditorView({
-  state: EditorState.create({ doc: '\\section{Title}\n\nMath: $E = mc^2$.' })
+  state: EditorState.create({
+    doc: '\\section{Introduction}\n\nText with \\textbf{visual formatting} and $E = mc^2$.',
+    extensions: [latex()]
+  })
 });
 
-const editor = new DualVisualEditor(document.querySelector('#app'), view, {
-  language: 'latex',
-  initialMode: 'visual'
+const editor = new DualVisualEditor(
+  document.querySelector('#editor'),
+  view,
+  {
+    language: 'latex',
+    initialMode: 'visual'
+  }
+);
+```
+
+For Typst, use your normal Typst CodeMirror language extension and set `language: 'typst'`.
+
+## API
+
+### DualVisualEditor
+
+`DualVisualEditor` adds source/visual mode controls, the formatting toolbar, theme support, and math hover support around an existing `EditorView`.
+
+```javascript
+const editor = new DualVisualEditor(container, view, {
+  language: 'latex',             // 'latex', 'typst', or a registered language
+  initialMode: 'visual',         // 'source' or 'visual'
+  showCommands: false,           // show concealed source syntax in visual mode
+  showToolbar: true,             // show the bundled formatting toolbar
+  enableMathHover: true,         // source-mode math preview
+  theme: 'light'                 // 'light' or 'dark'
 });
 ```
 
-`DualLatexEditor` is a thin subclass pinned to `language: 'latex'`.
+Useful methods include:
 
-### Keyboard
+```javascript
+editor.setMode('source');
+editor.toggleMode();
+editor.setLanguage('typst');
+editor.toggleCommandVisibility();
+editor.toggleToolbar();
+editor.setTheme('dark');
+editor.updateConfig({ showToolbar: false });
+editor.destroy();
+```
+
+`DualLatexEditor` is a convenience subclass with the language fixed to LaTeX.
+
+### Using the visual layer without the bundled UI
+
+If you already provide your own editor chrome, use the visual extension directly:
+
+```javascript
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import {
+  setVisualState,
+  visualExtension
+} from 'codemirror-visual-markup';
+
+const view = new EditorView({
+  state: EditorState.create({
+    doc: '\\section{Title}',
+    extensions: [visualExtension()]
+  }),
+  parent: document.querySelector('#editor')
+});
+
+view.dispatch({
+  effects: setVisualState.of({
+    enabled: true,
+    language: 'latex',
+    showCommands: false,
+    maxDepth: 12
+  })
+});
+```
+
+## Images
+
+External image URLs using `http:`, `https:`, `data:`, or `blob:` are displayed directly.
+
+For project-relative image paths, provide an image resolver. The resolver receives a normalized path relative to the current document and returns a browser-readable URL.
+
+```javascript
+import {
+  createImageResolver,
+  imageResolver
+} from 'codemirror-visual-markup';
+
+const resolver = createImageResolver(
+  () => currentDocumentPath,
+  async resolvedPath => {
+    const file = await loadProjectFile(resolvedPath);
+    if (!file) return null;
+
+    return URL.createObjectURL(file);
+  }
+);
+
+const view = new EditorView({
+  state: EditorState.create({
+    doc: '\\includegraphics{figures/result.png}',
+    extensions: [
+      imageResolver.of(resolver)
+    ]
+  })
+});
+
+// When the editor is no longer used:
+resolver.dispose?.();
+```
+
+`resolveImagePath(currentPath, src)` is also exported when only path normalization is needed.
+
+## Toolbar Customization
+
+### Hide the bundled toolbar
+
+```javascript
+const editor = new DualVisualEditor(container, view, {
+  language: 'latex',
+  showToolbar: false
+});
+```
+
+The toolbar can also be shown or hidden later:
+
+```javascript
+editor.toggleToolbar();
+// or
+editor.updateConfig({ showToolbar: false });
+```
+
+### Replace the toolbar
+
+The toolbar commands are exposed independently of the bundled DOM toolbar. This makes it possible to render them with any UI framework or component system.
+
+```javascript
+import {
+  getLanguage,
+  isToolbarButton,
+  scopeAt,
+  toolbarEntries
+} from 'codemirror-visual-markup';
+
+function renderToolbar(host, view, languageId) {
+  const language = getLanguage(languageId);
+  const scope = scopeAt(
+    view.state,
+    view.state.selection.main.head,
+    language
+  );
+
+  host.replaceChildren();
+
+  for (const entry of toolbarEntries(language, scope)) {
+    if (!isToolbarButton(entry)) continue;
+
+    const button = document.createElement('button');
+    button.textContent = entry.label;
+    button.addEventListener('click', () => entry.command(view));
+    host.appendChild(button);
+  }
+}
+```
+
+Recompute the entries when the selection changes so context-sensitive table controls appear only when relevant.
+
+The exported helpers `wrapSelection`, `insertText`, `insertBlock`, `createWrapItem`, `createHeadingItem`, `createListItem`, `createTableItem`, and `createColorItem` can also be used to build a toolbar from scratch.
+
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl`/`Cmd` + `E` | Toggle source and visual mode |
-| `Ctrl`/`Cmd` + `Shift` + `C` | Reveal markup in visual mode |
-| `Ctrl`/`Cmd` + `Shift` + `M` | Toggle math hover preview |
-| `Ctrl`/`Cmd` + `Shift` + `T` | Toggle the formatting toolbar |
+| `Ctrl`/`Cmd` + `Shift` + `C` | Show or conceal source syntax in visual mode |
+| `Ctrl`/`Cmd` + `Shift` + `M` | Toggle source-mode math hover |
+| `Ctrl`/`Cmd` + `Shift` + `T` | Toggle the bundled toolbar |
 
-Placing the cursor inside a construct reveals its markup inline, so hidden syntax is always
-reachable without leaving visual mode.
+Placing the cursor inside a visual construct reveals its source syntax, so the underlying document remains directly editable without leaving visual mode.
 
-## Adding a language
+## Custom Languages
 
-A language is a set of rules plus a style mapping:
+Languages can be registered with a tokenizer rule set, style mapping, and command definitions:
 
-```ts
-import { registerLanguage, Language } from 'codemirror-visual-markup';
+```typescript
+import {
+  registerLanguage,
+  type Language
+} from 'codemirror-visual-markup';
 
-const markdown: Language = {
-  id: 'markdown',
-  name: 'Markdown',
-  rules: [heading, emphasis, code],
+const language: Language = {
+  id: 'example',
+  name: 'Example',
+  rules: [headingRule, emphasisRule],
   style(token) {
-    if (token.kind === 'heading') return { class: `cm-lv-h${token.level}`, block: true };
-    if (token.kind === 'command') return { class: 'cm-lv-bold' };
+    if (token.kind === 'heading') {
+      return {
+        class: `cm-lv-h${token.level}`,
+        block: true
+      };
+    }
     return null;
   },
-  commands: { wrap: { bold: ['**', '**'] }, heading, list, table, color }
+  commands: {
+    wrap: {
+      bold: ['**', '**']
+    },
+    heading(level, text) {
+      return `${'#'.repeat(level)} ${text}`;
+    },
+    list(_kind, items) {
+      return items.map(item => `- ${item}`).join('\n');
+    },
+    table(rows, cols) {
+      return `${rows} x ${cols}`;
+    },
+    color(_kind, _color, text) {
+      return text;
+    }
+  }
 };
 
-registerLanguage(markdown);
+registerLanguage(language);
 ```
 
-A `Rule` receives `(source, position, context)` and returns a token with absolute offsets, or
-`null`. Call `context.parse(from, to, mode)` to tokenize a child range; nesting depth is bounded
-by `config.maxDepth`. `TokenStyle` selects how a token renders: `class`, `block`, `hidden`,
-`keepSyntax`, `replaceWith`, or an atomic `widget`.
+Optional table and figure adapters can provide richer visual structure for languages that support them.
 
-Languages with more than one syntactic mode read `context.mode` and recurse with an explicit
-one. Typst uses this to parse call arguments as code — where string literals, `name:` labels
-and separators are recognised and hidden — while a `[...]` block inside those arguments returns
-to markup. LaTeX ignores modes entirely. `keepSyntax` suppresses child decorations as well as
-its own, so a construct showing raw source never has children quietly hiding parts of it.
+## Building from Source
 
-Optional `table` adapter (`parse` / `serialize`) enables the editable grid widget.
-
-## TeXlyre integration
-
-Toolbar items use the same contract as TeXlyre's `PluginToolbar`, so the bundled DOM toolbar
-can be swapped for it without touching this package:
-
-```ts
-import { toolbarEntries, scopeAt, isToolbarButton, getLanguage } from 'codemirror-visual-markup';
-
-const language = getLanguage('latex');
-const scope = scopeAt(view.state, view.state.selection.main.head, language);
-const entries = toolbarEntries(language, scope);
-
-<PluginToolbar
-  items={entries.map(entry =>
-    isToolbarButton(entry) ? { key: entry.key, label: t(entry.label), icon: icons[entry.key] } : entry
-  )}
-  onRun={key => {
-    const item = entries.find(entry => isToolbarButton(entry) && entry.key === key);
-    if (item && isToolbarButton(item)) item.command(view);
-  }}
-/>;
+```bash
+git clone https://github.com/TeXlyre/codemirror-visual-markup.git
+cd codemirror-visual-markup
+npm install
+npm run build
 ```
 
-`ToolbarItem` is `{ key, label, icon?, command(view): boolean }` with `{ type: 'split' }` and
-`{ type: 'space' }` separators; keys are namespaced per language (`latex-bold`, `typst-bold`).
-`scopeAt` reports `inTable` / `inColor` so scoped entries appear only where they apply, and
-`wrapSelection` / `insertText` match the TeXlyre helper semantics.
+Run the tests with:
 
-## Collaborative editing
-
-Remote carets and selections from `y-codemirror.next` render normally over marks, line
-decorations and plain text — that covers headings, emphasis, environments and lists, because
-those constructs only hide short delimiter spans. They do **not** render inside a replaced
-range, so a remote caret is invisible inside an atomic math or table widget, and inside hidden
-markup such as `\\textbf{`.
-
-Feed remote positions into the `revealRanges` facet to suppress the widget wherever a
-collaborator is working:
-
-```ts
-import { revealAt } from 'codemirror-visual-markup';
-
-const remote = awareness
-  .getStates()
-  .values()
-  .filter(state => state.cursor)
-  .map(state => state.cursor.head);
-
-view.dispatch({ effects: StateEffect.appendConfig.of(revealAt(remote)) });
+```bash
+npm test
 ```
 
-Pass a colour to tint the indicator per collaborator: `revealAt(positions, user.color)`.
-Reconfigure the facet as awareness changes; the decoration field recomputes whenever its value
-changes identity.
+Run the GitHub Pages example locally with:
 
-Tables are granular for remote presence: a collaborator's caret inside one does not drop the
-whole table back to source. The widget stays rendered and only the cell they are in is
-outlined, in their colour. The local caret still reveals the table as source, so you keep
-direct access to the markup and to language services. The highlight is applied through `updateDOM`, so moving between cells never rebuilds
-the table and never steals focus from a cell being edited. A non-empty selection spanning the
-table still falls back to source, which is what you want when editing the markup itself.
-Granularity comes from `TableAdapter.ranges`, which reports the absolute range of every cell;
-any language that implements it gets the same behaviour, and `TokenStyle.granular` opts a
-widget into it. Widgets are compared by their source text, so a remote edit elsewhere in the
-document does not tear down an open MathLive field or a focused table cell.
-
-Widget commits are guarded: `replaceRange` verifies the widget's original text still occupies
-its live range before dispatching, so a concurrent remote edit to the same formula causes the
-local widget edit to be rejected rather than overwrite the remote value.
-
-## Inline figures
-
-`\\includegraphics{...}` and `#image("...")` render inline. External URLs (`http:`, `data:`,
-`blob:`) load directly; project-relative paths go through a resolver you supply, so this
-package never needs to know how your files are stored:
-
-```ts
-import { createImageResolver, imageResolver } from 'codemirror-visual-markup';
-
-const resolver = createImageResolver(
-  () => currentFilePath,
-  async resolvedPath => {
-    const file = await fileStorageService.getFileByPath(resolvedPath);
-    if (!file?.content) return null;
-    return URL.createObjectURL(new Blob([file.content], { type: file.mimeType }));
-  }
-);
-
-// extensions: [imageResolver.of(resolver)]
-// on unmount: resolver.dispose()
-```
-
-`resolveImagePath(currentPath, src)` normalises `.` and `..` against the containing directory;
-absolute paths pass through. `createImageResolver` memoises by resolved path, so the same figure
-referenced twice is fetched once, and `dispose()` revokes every object URL it handed out.
-Unresolvable sources get a `cm-lv-image-missing` placeholder rather than a broken element.
-
-Captions need no special handling in either language. `\\begin{figure}` is an ordinary container,
-so `\\caption{...}` stays editable text beside the rendered image. Typst's
-`#figure(image("plot.png"), caption: [A *nice* plot])` renders the same way: argument
-separators and the `caption:` label are hidden, the nested `image(...)` call becomes the
-figure, and the content block is parsed as markup so its emphasis still works and the text
-stays editable.
-
-## Language services (LSP, autocomplete, diagnostics, highlighting)
-
-Visual mode is a decoration layer over the real document, so anything that renders as a
-`Decoration.mark` or `Decoration.line` — syntax highlighting, lint underlines, LSP squiggles,
-selection matching — composes normally with it. Autocomplete, hover and code actions operate on
-the live text and the live selection, so they work unchanged.
-
-The exception is an atomic widget: nothing inside a replaced range is drawn, and MathLive
-fields and table cells are foreign DOM outside CodeMirror's text model. Two things keep that
-from mattering:
-
-**The widget dissolves under the caret.** The local selection always reveals the construct it
-touches, and the widget's boundary is not atomic, so the caret can step onto it and walk into
-the raw source. Wherever you are actually working, you are editing real text with every service
-attached. Widgets only exist where the caret is not.
-
-**Diagnostics you are not looking at** would otherwise be invisible. Feed their ranges into the
-reveal facet so the affected construct renders as source:
-
-```ts
-import { revealFrom } from 'codemirror-visual-markup';
-import { forEachDiagnostic, lintState } from '@codemirror/lint';
-
-revealFrom([lintState], state => {
-  const ranges: { from: number; to: number }[] = [];
-  forEachDiagnostic(state, (_diagnostic, from, to) => ranges.push({ from, to }));
-  return ranges;
-});
-```
-
-`revealFrom(deps, compute)` is a thin wrapper over `Facet.compute`, so any state — LSP results,
-search matches, a review pane's selection — can force a construct open without this package
-depending on it.
-
-## Scripts
-
-```
-npm run build          # type check, bundle, copy styles
-npm test               # jest (ts-jest, jsdom)
-npm run test:coverage
+```bash
 npm run pages-example
 ```
 
 ## License
 
-MIT
+MIT License. See [LICENSE](LICENSE) for details.
