@@ -100,14 +100,17 @@ function cellsFromArgument(source: string, range: Range, header = false): TableC
     const positional = argumentsOf(source, { from: paren.from + 1, to: paren.to - 1 })
       .map(arg => trimRange(source, arg))
       .filter(arg => !namedArgument(source.slice(arg.from, arg.to)));
+    const positionalContent = positional.length
+      ? cellContentRange(source, positional[positional.length - 1])
+      : null;
     const content = trailing
       ? { from: trailing.from + 1, to: trailing.to - 1 }
-      : positional.length
-        ? cellContentRange(source, positional[positional.length - 1])
-        : null;
+      : positionalContent?.content ?? null;
     if (!content) return [];
     return [{
       ...content,
+      visualFrom: trailing?.from ?? positionalContent?.visual.from ?? normalized.from,
+      visualTo: trailing?.to ?? positionalContent?.visual.to ?? normalized.to,
       colspan: numberArgument(options, 'colspan'),
       rowspan: numberArgument(options, 'rowspan'),
       column: numberArgument(options, 'x', true),
@@ -119,7 +122,13 @@ function cellsFromArgument(source: string, range: Range, header = false): TableC
   if (source[normalized.from] === '[') {
     const content = delimitedRange(source, normalized.from, '[', ']', normalized.to);
     if (content?.to === normalized.to) {
-      return [{ from: content.from + 1, to: content.to - 1, header }];
+      return [{
+        from: content.from + 1,
+        to: content.to - 1,
+        visualFrom: content.from,
+        visualTo: content.to,
+        header
+      }];
     }
   }
 
@@ -127,13 +136,21 @@ function cellsFromArgument(source: string, range: Range, header = false): TableC
 }
 
 
-function cellContentRange(source: string, range: Range): Range {
+function cellContentRange(
+  source: string,
+  range: Range
+): { content: Range; visual: Range } {
   const trimmed = trimRange(source, range);
   if (source[trimmed.from] === '[') {
     const block = delimitedRange(source, trimmed.from, '[', ']', trimmed.to);
-    if (block?.to === trimmed.to) return { from: block.from + 1, to: block.to - 1 };
+    if (block?.to === trimmed.to) {
+      return {
+        content: { from: block.from + 1, to: block.to - 1 },
+        visual: block
+      };
+    }
   }
-  return trimmed;
+  return { content: trimmed, visual: trimmed };
 }
 
 function argumentsOf(source: string, range: Range): Range[] {

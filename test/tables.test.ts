@@ -326,13 +326,14 @@ describe('Typst tables and grids', () => {
   });
 
   it('places cells after a rowspan in the next free visual column', () => {
-    const doc = [
+    const table = [
       '#table(',
       '  columns: 2,',
       '  table.cell(rowspan: 2)[A], [B],',
       '  [C],',
       ')'
     ].join('\n');
+    const doc = `intro\n\n${table}`;
     const state = EditorState.create({ doc, selection: { anchor: 0 } });
     const { decorations } = buildDecorations(state, { language: typst, showCommands: false });
     const columns: string[] = [];

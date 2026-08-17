@@ -163,7 +163,15 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
 
   const pushCell = (end: number) => {
     const range = cleanCell(source, { from: start, to: end });
-    cells.push({ ...range, ...cellSpan(source, range) });
+    const content = trimRange(source, range);
+    const text = source.slice(content.from, content.to);
+    cells.push({
+      ...range,
+      ...cellSpan(source, content),
+      ...(text.startsWith('$') || text.startsWith('\\includegraphics')
+        ? visualCellRange(source, range, content)
+        : {})
+    });
   };
 
   const pushRow = () => {
@@ -241,7 +249,7 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
   if (source.slice(start, token.body.to).trim() || cells.length) pushCell(token.body.to);
   pushRow();
 
-  const result = rows.filter(row => row.some(cell => cell.to > cell.from));
+  const result = rows.filter(row => row.length > 0);
   markHeaders(source, token, result);
   return result;
 }
@@ -270,16 +278,37 @@ function markHeaders(source: string, token: Token, rows: TableCellRange[][]): vo
 }
 
 function cleanCell(source: string, range: Range): Range {
-  let { from, to } = trimRange(source, range);
+  let { from } = range;
+  const { to } = range;
+  let cursor = trimRange(source, range).from;
+  let stripped = false;
 
-  while (from < to) {
-    const command = /^\\([a-zA-Z]+\*?)/.exec(source.slice(from, to));
+  while (cursor < to) {
+    const command = /^\\([a-zA-Z]+\*?)/.exec(source.slice(cursor, to));
     if (!command || !ROW_COMMANDS.has(command[1])) break;
-    from = skipCommand(source, from + command[0].length, to);
-    from = trimRange(source, { from, to }).from;
+    cursor = skipCommand(source, cursor + command[0].length, to);
+    cursor = trimRange(source, { from: cursor, to }).from;
+    stripped = true;
   }
 
+  // Keep ordinary cell whitespace in the range. Cursor lookup historically
+  // treats the spaces around `&` as part of the adjacent cells, and blank
+  // toolbar-inserted rows need non-empty source ranges to survive reparsing.
+  if (stripped) from = cursor;
   return { from, to };
+}
+
+
+function visualCellRange(
+  source: string,
+  range: Range,
+  content: Range
+): Pick<TableCellRange, 'visualFrom' | 'visualTo'> {
+  let from = content.from;
+  let to = content.to;
+  if (from > range.from && source[from - 1] !== '\n') from--;
+  if (to < range.to && source[to] !== '\n') to++;
+  return { visualFrom: from, visualTo: to };
 }
 
 function cellSpan(source: string, range: Range): Pick<TableCellRange, 'colspan' | 'rowspan'> {

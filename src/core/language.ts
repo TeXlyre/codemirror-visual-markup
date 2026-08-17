@@ -45,6 +45,8 @@ export interface TableCellRange extends Range {
   header?: boolean;
   column?: number;
   row?: number;
+  visualFrom?: number;
+  visualTo?: number;
 }
 
 export interface TableAdapter {

@@ -272,7 +272,11 @@ function layoutTable(
     if (cell.from > previous) hide(previous, cell.from);
 
     const content = trim(source, cell);
-    if (content.to > content.from) {
+    const visual = {
+      from: cell.visualFrom ?? content.from,
+      to: cell.visualTo ?? content.to
+    };
+    if (visual.to > visual.from) {
       const position = positions.get(cell) ?? { row: 0, cell: 0, column: 0 };
       const row = rows[position.row];
       const span = Math.max(1, cell.colspan ?? 1);
@@ -300,7 +304,7 @@ function layoutTable(
             'data-lv-colspan': String(span),
             'data-lv-rowspan': String(Math.max(1, cell.rowspan ?? 1))
           }
-        }).range(content.from, content.to)
+        }).range(visual.from, visual.to)
       );
     }
 

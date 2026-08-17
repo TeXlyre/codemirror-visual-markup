@@ -93,9 +93,12 @@ describe('typst code arguments', () => {
     expect(typst.style(token)).toEqual({ class: 'cm-lv-cmd-unknown', keepSyntax: true });
   });
 
-  it('does not decorate children of a construct that keeps its syntax', async () => {
+  it('renders table constructs as visual cells instead of keeping their syntax opaque', async () => {
     const view = await mount('intro\n\n#table(columns: 2, [a], [b])');
-    expect(view.contentDOM.textContent).toContain('#table(columns: 2, [a], [b])');
+    expect(view.contentDOM.querySelectorAll('.cm-lv-cell')).toHaveLength(2);
+    expect(view.contentDOM.textContent).not.toContain('#table');
+    expect(view.contentDOM.textContent).toContain('a');
+    expect(view.contentDOM.textContent).toContain('b');
   });
 
   it('round-trips unbalanced and empty argument lists', () => {
