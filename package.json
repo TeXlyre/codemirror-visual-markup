@@ -1,5 +1,5 @@
 {
-  "name": "codemirror-latex-visual",
+  "name": "codemirror-visual-markup",
   "version": "0.2.0",
   "description": "Visual editing for LaTeX and Typst in CodeMirror 6",
   "author": "Fares Abawi <fares@abawi.me>",
