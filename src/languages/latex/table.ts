@@ -261,6 +261,19 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
   pushRow();
 
   const result = rows.filter(row => row.length > 0);
+
+  // LaTeX's `&` separators define explicit source columns. In rows below a
+  // \multirow, authors normally keep an empty placeholder (`& ...`) for the
+  // occupied column. Preserve those source columns instead of auto-skipping
+  // rowspan occupancy (Typst, by contrast, uses automatic free-cell placement).
+  for (const row of result) {
+    let column = 0;
+    for (const cell of row) {
+      cell.column = column;
+      column += Math.max(1, cell.colspan ?? 1);
+    }
+  }
+
   markHeaders(source, token, result);
   return result;
 }

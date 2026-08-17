@@ -399,13 +399,15 @@
 .cm-lv-cell {
   display: inline-flex;
   box-sizing: border-box;
+  flex: 0 0 var(--lv-cell-width, 8ch);
   width: var(--lv-cell-width, 8ch);
   min-height: 2.3em;
   padding: 0.4em 0.7em;
   align-items: center;
   vertical-align: top;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
   border: 1px solid color-mix(in srgb, var(--lv-table) 38%, var(--lv-border));
   border-left: 0;
   margin-left: var(--lv-cell-offset, 0ch);

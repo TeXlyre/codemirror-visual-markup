@@ -274,11 +274,149 @@ describe('table variants', () => {
     expect(widths.size).toBe(2);
     expect([...widths.values()].every(value => value.size === 1)).toBe(true);
   });
+  it('keeps multiline source cells in one visual LaTeX row', () => {
+    const doc = [
+      'intro',
+      '',
+      '\\begin{tabularx}{\\textwidth}{lXr}',
+      '\\toprule',
+      'Condition & Description & Result \\\\',
+      '\\midrule',
+      'A &',
+      'A long description that belongs to the same logical row &',
+      '82\\% \\\\',
+      'B &',
+      'Another description &',
+      '91\\% \\\\',
+      '\\bottomrule',
+      '\\end{tabularx}'
+    ].join('\n');
+    const view = mount(doc);
+    const rows = Array.from(view.contentDOM.querySelectorAll('.cm-lv-table-row'));
+
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.querySelectorAll('.cm-lv-cell')).toHaveLength(3);
+    }
+    expect(Array.from(rows[1].querySelectorAll('.cm-lv-cell'), cell => cell.textContent?.trim())).toEqual([
+      'A',
+      'A long description that belongs to the same logical row',
+      '82%'
+    ]);
+  });
+
+  it('keeps LaTeX source columns stable below multirow cells', () => {
+    const doc = [
+      '\\begin{tabular}{llcc}',
+      '\\toprule',
+      'Group & Condition & Trial 1 & Trial 2 \\\\',
+      '\\midrule',
+      '\\multirow{2}{*}{Human}',
+      '&',
+      'Visual &',
+      '81 &',
+      '86 \\\\',
+      '&',
+      'Auditory &',
+      '77 &',
+      '83 \\\\',
+      '\\bottomrule',
+      '\\end{tabular}'
+    ].join('\n');
+    const token = latexTable(doc);
+    const ranges = latex.table!.ranges!(doc, token);
+
+    expect(ranges[1].map(cell => cell.column)).toEqual([0, 1, 2, 3]);
+    expect(ranges[2].map(cell => cell.column)).toEqual([0, 1, 2, 3]);
+
+    const view = mount(`intro\n\n${doc}`);
+    const auditory = Array.from(view.contentDOM.querySelectorAll('.cm-lv-cell'))
+      .find(cell => cell.textContent?.trim() === 'Auditory') as HTMLElement;
+    expect(auditory?.dataset.lvColumn).toBe('1');
+  });
+
+  it('keeps multiline image rows in one visual row', () => {
+    const doc = [
+      'intro',
+      '',
+      '\\begin{tabular}{lll}',
+      '\\toprule',
+      'Condition &',
+      'Preview &',
+      'Description \\\\',
+      '\\midrule',
+      'Alpha &',
+      '\\includegraphics[width=2cm]{https://example.com/a.png} &',
+      'First stimulus \\\\',
+      '\\bottomrule',
+      '\\end{tabular}'
+    ].join('\n');
+    const view = mount(doc);
+    const rows = Array.from(view.contentDOM.querySelectorAll('.cm-lv-table-row'));
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelectorAll('.cm-lv-cell')).toHaveLength(3);
+    expect(rows[1].querySelectorAll('.cm-lv-cell')).toHaveLength(3);
+    expect(rows[1].querySelector('.cm-lv-cell.cm-lv-image')).not.toBeNull();
+  });
+
+  it('keeps multiline display math inline with its table row', () => {
+    const doc = [
+      'intro',
+      '',
+      '\\begin{tabular}{lll}',
+      'Symbol & Value & Note \\\\',
+      '$$\\alpha$$ &',
+      '$$',
+      '\\frac{1}{2}',
+      '$$ &',
+      '\\textbf{bold cell} \\\\',
+      '\\end{tabular}'
+    ].join('\n');
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const result = buildDecorations(state, { language: latex, showCommands: false });
+    const display = flatten(result.tokens).find(token => token.kind === 'math' && token.display && token.from > doc.indexOf('Value'))!;
+    let replacement: { block?: boolean; widget?: unknown } | undefined;
+    const cursor = result.decorations.iter();
+
+    while (cursor.value) {
+      if (cursor.from === display.from && cursor.to === display.to) {
+        replacement = cursor.value.spec as { block?: boolean; widget?: unknown };
+        break;
+      }
+      cursor.next();
+    }
+
+    expect(display.meta?.tableInline).toBe('true');
+    expect(replacement?.widget).toBeDefined();
+    expect(replacement?.block).toBe(false);
+  });
 });
 
 describe('Typst tables and grids', () => {
   const typstTable = (doc: string) =>
     new Tokenizer(typst).tokenize(doc).find(token => token.kind === 'table')!;
+
+  it('keeps one-cell-per-line Typst source in logical visual rows', () => {
+    const doc = [
+      'intro',
+      '',
+      '#table(',
+      '  columns: 3,',
+      '  [A],',
+      '  [B],',
+      '  [C],',
+      '  [D],',
+      '  [E],',
+      '  [F],',
+      ')'
+    ].join('\n');
+    const view = mount(doc, 0, 'typst');
+    const rows = Array.from(view.contentDOM.querySelectorAll('.cm-lv-table-row'));
+
+    expect(rows).toHaveLength(2);
+    expect(rows.every(row => row.querySelectorAll('.cm-lv-cell').length === 3)).toBe(true);
+  });
 
   it('lays out a normal Typst table as editable visual cells', () => {
     const table = [

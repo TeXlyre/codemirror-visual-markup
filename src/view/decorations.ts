@@ -66,6 +66,7 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
   const atomic: CMRange<Decoration>[] = [];
   const replaced: Range[] = [];
   const concealed: Range[] = [];
+  const joinedBreaks = new Set<number>();
   const local: RevealRange[] = [...state.selection.ranges];
   const external = state.facet(revealRanges);
 
@@ -109,7 +110,10 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
         const tableInline = token.meta?.tableInline === 'true';
         const block = Boolean(style.block && !tableInline);
 
-        if (widget && (block || !spansLines)) {
+        // Table cells are laid out as a single visual row even when the source
+        // uses one physical line per cell. An inline table widget may therefore
+        // legitimately replace line breaks (for example multiline display math).
+        if (widget && (block || !spansLines || tableInline)) {
           const decoration = Decoration.replace({ widget, block });
           decorations.push(decoration.range(token.from, token.to));
           atomic.push(decoration.range(token.from, token.to));
@@ -138,7 +142,7 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
       }
 
       if (token.kind === 'table' && !options.showCommands && !inScope) {
-        layoutTable(state, source, options.language, token, decorations, hide);
+        layoutTable(state, source, options.language, token, decorations, hide, joinedBreaks);
       }
 
       if (token.children && !style.keepSyntax) emit(token.children);
@@ -153,7 +157,13 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
     decorations.push(hidden.range(span.from, span.to));
 
     const line = state.doc.lineAt(span.from);
-    if (span.from === line.from && span.to === line.to && line.length > 0) {
+    if (
+      span.from === line.from &&
+      span.to === line.to &&
+      line.length > 0 &&
+      !joinedBreaks.has(line.to) &&
+      !joinedBreaks.has(line.from - 1)
+    ) {
       decorations.push(Decoration.line({ class: 'cm-lv-syntax-line' }).range(line.from));
     }
   }
@@ -200,7 +210,8 @@ function layoutTable(
   language: Language,
   token: Token,
   decorations: CMRange<Decoration>[],
-  hide: (from: number, to: number) => void
+  hide: (from: number, to: number) => void,
+  joinedBreaks: Set<number>
 ): void {
   const rows = language.table?.ranges?.(source, token);
   if (!rows?.length || !token.body) return;
@@ -250,26 +261,38 @@ function layoutTable(
     });
   });
 
+  const cells = rows.flat();
+  const protectedBreaks = tableProtectedRanges(language, token.children);
+
   rows.forEach((row, rowIndex) => {
     if (!row.length) return;
-    const first = state.doc.lineAt(row[0].from);
-    const last = state.doc.lineAt(Math.max(row[0].from, row[row.length - 1].to));
+    const contentStarts = row
+      .map(cell => trim(source, cell))
+      .filter(cell => cell.length > 0)
+      .map(cell => cell.from);
+    const first = state.doc.lineAt(contentStarts.length ? Math.min(...contentStarts) : row[0].from);
     const header = row.every(cell => cell.header);
+    const classes = [
+      'cm-lv-table-row',
+      rowIndex === 0 ? 'cm-lv-table-row-first' : '',
+      rowIndex === rows.length - 1 ? 'cm-lv-table-row-last' : '',
+      rowIndex % 2 === 1 ? 'cm-lv-table-row-alt' : '',
+      header ? 'cm-lv-table-row-header' : ''
+    ].filter(Boolean).join(' ');
 
-    for (let number = first.number; number <= last.number; number++) {
-      const line = state.doc.line(number);
-      const classes = [
-        'cm-lv-table-row',
-        rowIndex === 0 ? 'cm-lv-table-row-first' : '',
-        rowIndex === rows.length - 1 ? 'cm-lv-table-row-last' : '',
-        rowIndex % 2 === 1 ? 'cm-lv-table-row-alt' : '',
-        header ? 'cm-lv-table-row-header' : ''
-      ].filter(Boolean).join(' ');
-      decorations.push(Decoration.line({ class: classes }).range(line.from));
-    }
+    // Only the first physical source line owns the visual row. Hide line breaks
+    // inside the logical row so source formatting such as
+    //
+    //   A &
+    //   long description &
+    //   42 \\
+    //
+    // remains one visual table row. CodeMirror explicitly supports direct
+    // replace decorations over line breaks for layout-changing decorations.
+    decorations.push(Decoration.line({ class: classes }).range(first.from));
+    joinTableRowLines(source, row, cells, protectedBreaks, decorations, joinedBreaks);
   });
 
-  const cells = rows.flat();
   let previous = token.body.from;
 
   const nextColumn = new Map<number, number>();
@@ -332,6 +355,74 @@ function layoutTable(
   hide(previous, token.body.to);
 }
 
+
+const tableLineJoin = Decoration.replace({});
+
+function joinTableRowLines(
+  source: string,
+  row: readonly Range[],
+  allCells: readonly Range[],
+  protectedRanges: readonly Range[],
+  decorations: CMRange<Decoration>[],
+  joinedBreaks: Set<number>
+): void {
+  if (!row.length) return;
+
+  const joinRanges: Range[] = [];
+  const inRow = new Set(row);
+
+  // Whitespace used only to format a source cell over several physical lines
+  // should not create extra visual rows.
+  for (const cell of row) {
+    const content = trim(source, cell);
+    if (cell.from < content.from) joinRanges.push({ from: cell.from, to: content.from });
+    if (content.to < cell.to) joinRanges.push({ from: content.to, to: cell.to });
+  }
+
+  // Typst cell ranges are trimmed, so their formatting newline usually lives
+  // between adjacent arguments rather than inside a cell range. Join that gap
+  // only when no cell belonging to another logical row sits between them.
+  const ordered = [...row].sort((a, b) => a.from - b.from || a.to - b.to);
+  for (let index = 1; index < ordered.length; index++) {
+    const left = ordered[index - 1];
+    const right = ordered[index];
+    if (right.from <= left.to) continue;
+
+    const crossesOtherRow = allCells.some(cell =>
+      !inRow.has(cell) && cell.from < right.from && cell.to > left.to
+    );
+    if (!crossesOtherRow) joinRanges.push({ from: left.to, to: right.from });
+  }
+
+  const joined = new Set<number>();
+  for (const range of joinRanges) {
+    let cursor = source.indexOf('\n', range.from);
+    while (cursor >= 0 && cursor < range.to) {
+      const protectedBreak = protectedRanges.some(item => item.from <= cursor && item.to > cursor);
+      if (!protectedBreak && !joined.has(cursor)) {
+        decorations.push(tableLineJoin.range(cursor, cursor + 1));
+        joined.add(cursor);
+        joinedBreaks.add(cursor);
+      }
+      cursor = source.indexOf('\n', cursor + 1);
+    }
+  }
+}
+
+function tableProtectedRanges(language: Language, tokens: Token[] | undefined): Range[] {
+  const ranges: Range[] = [];
+  if (!tokens) return ranges;
+
+  const visit = (items: Token[]) => {
+    for (const token of items) {
+      const style = language.style(token);
+      if (token.kind === 'table' || style?.widget) ranges.push({ from: token.from, to: token.to });
+      else if (token.children) visit(token.children);
+    }
+  };
+  visit(tokens);
+  return ranges;
+}
 
 // Reserve room for the cell's horizontal padding/borders in the monospace editor grid.
 const TABLE_CELL_CHROME = 3;
