@@ -3,6 +3,20 @@ class MathfieldElement extends HTMLElement {
     super();
     this.value = '';
     this.readOnly = false;
+    this.lastSetValue = undefined;
+    this.lastSetValueFormat = undefined;
+    this.lastGetValueFormat = undefined;
+  }
+
+  setValue(value, options = {}) {
+    this.value = value;
+    this.lastSetValue = value;
+    this.lastSetValueFormat = options.format;
+  }
+
+  getValue(format) {
+    this.lastGetValueFormat = format;
+    return this.value;
   }
 }
 

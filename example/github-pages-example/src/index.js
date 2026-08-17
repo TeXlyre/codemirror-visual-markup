@@ -1,8 +1,8 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { lintGutter, linter } from '@codemirror/lint';
-import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { lintGutter } from '@codemirror/lint';
+import { defaultHighlightStyle, foldGutter, syntaxHighlighting } from '@codemirror/language';
 
 import { DualVisualEditor, createImageResolver, imageResolver, listLanguages } from '../../..';
 
@@ -69,8 +69,8 @@ $ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $
 
 const LANGUAGE_SUPPORT = {
   latex: async () => {
-    const { latex, latexLinter } = await import('codemirror-lang-latex');
-    return [latex({ autoCloseTags: true }), linter(latexLinter()), lintGutter()];
+    const { latex } = await import('codemirror-lang-latex');
+    return [latex({ autoCloseTags: true }), lintGutter()];
   },
   typst: async () => {
     const { typst } = await import('codemirror-lang-typst');
@@ -103,6 +103,7 @@ async function mount(language) {
       doc: SAMPLES[language],
       extensions: [
         lineNumbers(),
+        foldGutter(),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),

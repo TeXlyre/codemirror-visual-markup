@@ -199,7 +199,7 @@
 .cm-lv-math-display {
   display: block;
   padding: var(--lv-spacing-container);
-  margin: var(--lv-spacing-widget);
+  margin: 0 var(--lv-spacing-widget);
   text-align: center;
   color: var(--lv-math);
 }

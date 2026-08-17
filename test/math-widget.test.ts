@@ -1,27 +1,39 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { setVisualState, visualExtension } from '../src/view/visual-editor';
+import { preloadMath } from '../src/view/math-field';
 import '../src/languages/latex';
+import '../src/languages/typst';
 import '../src/view/widgets';
 
-const mount = (doc: string) => {
+const mount = (doc: string, language = 'latex') => {
   const view = new EditorView({
     state: EditorState.create({ doc, selection: { anchor: 0 }, extensions: [visualExtension()] }),
     parent: document.body
   });
   view.dispatch({
-    effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
+    effects: setVisualState.of({ enabled: true, language, showCommands: false, maxDepth: 12 })
   });
   return view;
 };
 
 const container = (view: EditorView) => view.contentDOM.querySelector('.cm-lv-math') as HTMLElement;
-const field = (view: EditorView) => container(view).firstElementChild as HTMLElement & { value: string };
+type TestMathfield = HTMLElement & {
+  value: string;
+  lastSetValue?: string;
+  lastSetValueFormat?: string;
+  lastGetValueFormat?: string;
+};
+
+const field = (view: EditorView) => container(view).firstElementChild as TestMathfield;
 
 const focusOut = (view: EditorView, relatedTarget: Node | null) =>
   container(view).dispatchEvent(new FocusEvent('focusout', { relatedTarget: relatedTarget as EventTarget, bubbles: true }));
 
 describe('math widget editing', () => {
+  beforeAll(async () => {
+    await preloadMath();
+  });
   it('commits an edit when focus leaves entirely', () => {
     const view = mount('text $x$ more');
     field(view).value = 'y^2';
@@ -75,5 +87,22 @@ describe('math widget editing', () => {
     container(view).dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(view.state.doc.toString()).toBe('text $z$ more');
+  });
+
+  it('parses Typst math for MathLive and commits Typst output', () => {
+    const view = mount('$ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $', 'typst');
+    const mathfield = field(view);
+
+    expect(mathfield.lastSetValueFormat).toBe('ascii-math');
+    expect(mathfield.lastSetValue).toBe('int_(-oo)^oo e^(-x^2) dx = sqrt(pi)');
+
+    mathfield.value = 'integral_0^1 x dif x';
+    container(view).dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(mathfield.lastGetValueFormat).toBe('typst');
+    expect(view.state.doc.toString()).toBe('$ integral_0^1 x dif x $');
+
+    const roundTrip = mount('$ integral_(-infinity)^infinity e^(-x^2) dif x = sqrt(pi) $', 'typst');
+    expect(field(roundTrip).lastSetValue).toBe('int_(-oo)^oo e^(-x^2) dx = sqrt(pi)');
   });
 });

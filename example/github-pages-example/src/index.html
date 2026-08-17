@@ -3,32 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CodeMirror visual markup editor with interactive LaTeX and Typst editing">
   <title>CodeMirror Visual Markup Editor</title>
 </head>
 <body>
   <header>
     <h1>CodeMirror Visual Markup Editor</h1>
-    <p>One visual editing layer, pluggable markup languages. The source document stays authoritative.</p>
+    <p>One visual editing layer for pluggable markup languages while the source document stays authoritative.</p>
+    <div class="links">
+      <a href="https://github.com/TeXlyre/codemirror-visual-markup" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://www.npmjs.com/package/codemirror-visual-markup" target="_blank" rel="noopener noreferrer">npm</a>
+    </div>
   </header>
 
   <main>
-    <div class="controls">
-      <label for="language">Language</label>
-      <select id="language"></select>
-      <button id="theme" type="button">Toggle theme</button>
-      <span class="mode">Mode: <strong id="mode">visual</strong></span>
-    </div>
+    <section class="demo-container">
+      <h2>Interactive Visual Editor</h2>
+      <p>Switch between LaTeX and Typst, edit visual widgets directly, or toggle back to the source at any time.</p>
 
-    <div id="editor"></div>
+      <div class="controls">
+        <label for="language">Language</label>
+        <select id="language"></select>
+        <button id="theme" type="button">Toggle theme</button>
+        <span class="mode">Mode: <strong id="mode">visual</strong></span>
+      </div>
 
-    <ul class="hints">
-      <li><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle source and visual mode</li>
-      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> reveal markup</li>
-      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> toggle the toolbar</li>
-      <li>Place the cursor inside a construct to reveal its markup inline</li>
-      <li>Put the cursor in a table to get row and column controls in the toolbar</li>
-      <li>Type <kbd>\</kbd> or <kbd>#</kbd> for autocomplete from the language package</li>
-    </ul>
+      <div id="editor"></div>
+    </section>
+
+    <section class="features">
+      <h2>Visual Editor Features</h2>
+      <ul>
+        <li><strong>Single document:</strong> visual widgets edit the same CodeMirror document directly.</li>
+        <li><strong>Multiple languages:</strong> the same visual layer supports LaTeX and Typst language adapters.</li>
+        <li><strong>Interactive math:</strong> click equations to edit them with MathLive.</li>
+        <li><strong>Source access:</strong> reveal markup around the cursor or switch fully back to source mode.</li>
+      </ul>
+    </section>
+
+    <section class="keyboard-shortcuts">
+      <h2>Keyboard Shortcuts</h2>
+      <div class="shortcuts-grid">
+        <div class="shortcut-group">
+          <h3>Editor Controls</h3>
+          <ul>
+            <li><kbd>Ctrl+E</kbd> - Toggle source and visual mode</li>
+            <li><kbd>Ctrl+Shift+C</kbd> - Reveal markup</li>
+            <li><kbd>Ctrl+Shift+T</kbd> - Toggle the toolbar</li>
+          </ul>
+        </div>
+        <div class="shortcut-group">
+          <h3>Visual Editing</h3>
+          <ul>
+            <li>Place the cursor inside a construct to reveal its markup inline</li>
+            <li>Place the cursor in a table for row and column controls</li>
+            <li>Type <kbd>\</kbd> or <kbd>#</kbd> for language-package autocomplete</li>
+          </ul>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer>
+    <p>MIT License &copy; <span id="year"></span> TeXlyre</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
