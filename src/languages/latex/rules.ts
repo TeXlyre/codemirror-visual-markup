@@ -114,6 +114,16 @@ export const command: Rule = (source, pos, ctx) => {
   const body = args[args.length - 1];
 
   const token: Token = { kind: 'command', name, from: pos, to, body, args };
+
+  if ((name === 'textcolor' || name === 'colorbox') && args[0]) {
+    token.meta = { color: source.slice(args[0].from, args[0].to).trim() };
+  } else if (name === 'fcolorbox' && args[1]) {
+    token.meta = {
+      borderColor: source.slice(args[0].from, args[0].to).trim(),
+      color: source.slice(args[1].from, args[1].to).trim()
+    };
+  }
+
   if (body) token.children = ctx.parse(body.from, body.to);
   return token;
 };

@@ -17,6 +17,7 @@ export type WidgetKind = 'math' | 'image';
 
 export interface TokenStyle {
   class?: string;
+  attributes?: Record<string, string>;
   hidden?: boolean;
   block?: boolean;
   widget?: WidgetKind;

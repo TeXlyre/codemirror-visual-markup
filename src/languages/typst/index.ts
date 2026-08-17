@@ -1,3 +1,4 @@
+import { cssColor } from '../../core/color';
 import { registerLanguage, Language, LanguageCommands, TokenStyle } from '../../core/language';
 import { Token } from '../../core/tokens';
 import { rules } from './rules';
@@ -37,7 +38,8 @@ const commands: LanguageCommands = {
     return `#table(\n  columns: ${cols},\n${lines.join('\n')}\n)`;
   },
   color(kind, color, text) {
-    return kind === 'text' ? `#text(fill: ${color})[${text}]` : `#highlight(fill: ${color})[${text}]`;
+    const value = /^#[0-9a-f]{6}$/i.test(color) ? `rgb("${color}")` : color;
+    return kind === 'text' ? `#text(fill: ${value})[${text}]` : `#highlight(fill: ${value})[${text}]`;
   }
 };
 
@@ -63,6 +65,16 @@ function style(token: Token): TokenStyle | null {
       if (token.name === 'image') return { widget: 'image' };
       if (token.meta?.statement) return { class: 'cm-lv-cmd-unknown', keepSyntax: true };
       if (token.meta?.args === 'code') return {};
+      if (token.name === 'text' || token.name === 'highlight') {
+        const color = cssColor(token.meta?.color);
+        if (color) {
+          const property = token.name === 'text' ? 'color' : 'background-color';
+          return {
+            class: token.name === 'text' ? 'cm-lv-colored' : 'cm-lv-colorbox',
+            attributes: { style: `${property}:${color}` }
+          };
+        }
+      }
       const known = CLASSES.get(token.name!);
       return known ? { class: known } : { class: 'cm-lv-cmd', keepSyntax: !token.body };
     }

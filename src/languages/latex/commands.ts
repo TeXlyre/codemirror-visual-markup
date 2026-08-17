@@ -2,7 +2,7 @@ export const EDITABLE_COMMANDS = new Set([
   'textbf', 'textit', 'emph', 'underline', 'textsc', 'textsf', 'texttt',
   'section', 'subsection', 'subsubsection', 'title', 'author', 'date',
   'footnote', 'cite', 'citeyear', 'citep', 'citey', 'ref', 'label', 'url', 'href',
-  'textcolor', 'color', 'colorbox'
+  'textcolor', 'color', 'colorbox', 'fcolorbox'
 ]);
 
 export const FORMATTING_COMMANDS = new Map([
@@ -20,7 +20,8 @@ export const COMMAND_CLASSES = new Map([
   ['textsf', 'cm-lv-sans'],
   ['texttt', 'cm-lv-mono'],
   ['textcolor', 'cm-lv-colored'],
-  ['colorbox', 'cm-lv-colorbox']
+  ['colorbox', 'cm-lv-colorbox'],
+  ['fcolorbox', 'cm-lv-colorbox']
 ]);
 
 export const HEADING_LEVELS = new Map([

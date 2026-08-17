@@ -39,6 +39,11 @@ describe('toolbar contract', () => {
     expect(editor.state.doc.toString()).toBe('== Heading');
   });
 
+  it('uses valid hex-colour syntax for each language', () => {
+    expect(latex.commands.color('text', '#c0392b', 'x')).toBe('\\textcolor[HTML]{C0392B}{x}');
+    expect(typst.commands.color('text', '#c0392b', 'x')).toBe('#text(fill: rgb("#c0392b"))[x]');
+  });
+
   it('starts a block construct on its own line', () => {
     const editor = view('existing', 8);
     item(toolbarEntries(latex, EMPTY_SCOPE), 'latex-bullet-list').command(editor);

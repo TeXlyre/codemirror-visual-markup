@@ -10,6 +10,7 @@ interface Emitted {
   from: number;
   to: number;
   class?: string;
+  attributes?: Record<string, string>;
   widget: boolean;
 }
 
@@ -32,6 +33,7 @@ function decorate(source: string, options: { language?: Language; showCommands?:
       from: cursor.from,
       to: cursor.to,
       class: (cursor.value.spec as { class?: string }).class,
+      attributes: (cursor.value.spec as { attributes?: Record<string, string> }).attributes,
       widget: Boolean((cursor.value.spec as { widget?: unknown }).widget)
     });
     cursor.next();
@@ -99,6 +101,24 @@ describe('decoration builder', () => {
 
     expect(ranges.some(range => range.class?.includes('cm-lv-h1'))).toBe(true);
     expect(ranges.some(range => range.class === 'cm-lv-bold')).toBe(true);
+  });
+
+  it('uses the requested LaTeX text and background colours', () => {
+    const text = decorate('\\textcolor{red}{warning}').ranges.find(range => range.class === 'cm-lv-colored')!;
+    const box = decorate('\\colorbox{yellow}{note}').ranges.find(range => range.class === 'cm-lv-colorbox')!;
+
+    expect(text.attributes?.style).toBe('color:red');
+    expect(box.attributes?.style).toBe('background-color:yellow');
+  });
+
+  it('uses Typst fill colours without exposing the command syntax', () => {
+    const text = decorate('#text(fill: red)[warning]', { language: typst })
+      .ranges.find(range => range.class === 'cm-lv-colored')!;
+    const highlight = decorate('#highlight(fill: rgb("#ffee88"))[note]', { language: typst })
+      .ranges.find(range => range.class === 'cm-lv-colorbox')!;
+
+    expect(text.attributes?.style).toBe('color:red');
+    expect(highlight.attributes?.style).toBe('background-color:#ffee88');
   });
 
   it('produces a decoration set CodeMirror accepts', () => {

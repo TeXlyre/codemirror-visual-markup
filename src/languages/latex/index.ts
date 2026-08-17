@@ -1,3 +1,4 @@
+import { cssColor } from '../../core/color';
 import { registerLanguage, Language, LanguageCommands, TableAdapter, TokenStyle } from '../../core/language';
 import { Range, Token } from '../../core/tokens';
 import { ARGUMENT_COUNT, COMMAND_CLASSES, EDITABLE_COMMANDS, LIST_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
@@ -30,7 +31,9 @@ const commands: LanguageCommands = {
     return `\\begin{tabular}{${alignment}}\n${body}\n\\end{tabular}`;
   },
   color(kind, color, text) {
-    return `\\${kind === 'text' ? 'textcolor' : 'colorbox'}{${color}}{${text}}`;
+    const hex = /^#([0-9a-f]{6})$/i.exec(color);
+    const value = hex ? `[HTML]{${hex[1].toUpperCase()}}` : `{${color}}`;
+    return `\\${kind === 'text' ? 'textcolor' : 'colorbox'}${value}{${text}}`;
   }
 };
 
@@ -117,7 +120,17 @@ function style(token: Token): TokenStyle | null {
     case 'command': {
       if (token.name === 'includegraphics') return { widget: 'image' };
       const known = COMMAND_CLASSES.get(token.name!);
-      if (known) return { class: known };
+      if (known) {
+        const color = cssColor(token.meta?.color);
+        const border = cssColor(token.meta?.borderColor);
+        const properties: string[] = [];
+        if (color) properties.push(token.name === 'textcolor' ? `color:${color}` : `background-color:${color}`);
+        if (border) properties.push(`box-shadow:inset 0 0 0 1px ${border}`);
+        return {
+          class: known,
+          attributes: properties.length ? { style: properties.join(';') } : undefined
+        };
+      }
       if (EDITABLE_COMMANDS.has(token.name!)) return { class: 'cm-lv-cmd' };
       return { class: 'cm-lv-cmd-unknown', keepSyntax: true };
     }

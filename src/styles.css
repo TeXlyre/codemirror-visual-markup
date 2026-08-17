@@ -225,22 +225,25 @@
 }
 
 .cm-lv-table {
-  background: color-mix(in srgb, var(--lv-table) 6%, transparent);
+  background: color-mix(in srgb, var(--lv-table) 4%, transparent);
   border-left: 3px solid var(--lv-table);
 }
 
 .cm-lv-cell {
   display: inline-block;
-  padding-right: 0.5em;
+  box-sizing: border-box;
+  padding: 0.15em 0.5em;
+  margin-right: -1px;
+  vertical-align: middle;
+  border: 1px solid color-mix(in srgb, var(--lv-table) 32%, var(--lv-border));
+  background: color-mix(in srgb, var(--lv-table) 3%, transparent);
 }
 
 .cm-lv-col-sep {
   display: inline-block;
-  width: 1px;
-  height: 1.1em;
-  margin: 0 0.6em;
-  vertical-align: text-bottom;
-  background: var(--lv-border);
+  width: 0;
+  height: 0;
+  margin: 0;
 }
 
 .cm-lv-syntax-line {

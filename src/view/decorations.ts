@@ -174,7 +174,7 @@ function applyStyle(
   if (style.block) {
     const last = state.doc.lineAt(Math.max(token.from, Math.min(token.to, state.doc.length)));
     let line = state.doc.lineAt(token.from);
-    const decoration = Decoration.line({ class: style.class });
+    const decoration = Decoration.line({ class: style.class, attributes: style.attributes });
 
     while (true) {
       decorations.push(decoration.range(line.from));
@@ -186,7 +186,9 @@ function applyStyle(
 
   const body: Range = token.body ?? token;
   if (body.to > body.from) {
-    decorations.push(Decoration.mark({ class: style.class }).range(body.from, body.to));
+    decorations.push(
+      Decoration.mark({ class: style.class, attributes: style.attributes }).range(body.from, body.to)
+    );
   }
 }
 

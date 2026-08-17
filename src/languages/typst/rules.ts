@@ -4,6 +4,14 @@ import { atLineStart, inner, matchDelimited, matchFenced, matchLine } from '../.
 
 const CODE_KEYWORDS = new Set(['let', 'set', 'show', 'import', 'include', 'if', 'else', 'for', 'while']);
 
+
+function fillValue(source: string, range?: Range): string | undefined {
+  if (!range) return undefined;
+  const args = source.slice(range.from, range.to);
+  const match = /(?:^|,)\s*fill\s*:\s*(rgb\([^)]*\)|#[0-9a-fA-F]+|[a-zA-Z][\w.-]*)/.exec(args);
+  return match?.[1]?.trim();
+}
+
 export const comment: Rule = (source, pos) => {
   if (source.startsWith('//', pos)) {
     const line = matchLine(source, pos);
@@ -117,11 +125,14 @@ function callToken(source: string, pos: number, ctx: RuleContext, prefix: number
     body
   };
 
+  const fill = (name === 'text' || name === 'highlight') ? fillValue(source, args[0]) : undefined;
+  if (fill) token.meta = { color: fill };
+
   if (content) {
     token.children = ctx.parse(content.from, content.to, 'markup');
   } else if (args[0]) {
     token.children = ctx.parse(args[0].from, args[0].to, 'code');
-    token.meta = { args: 'code' };
+    token.meta = { ...token.meta, args: 'code' };
   }
 
   return token;
