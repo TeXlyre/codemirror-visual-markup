@@ -1,4 +1,11 @@
-type Mathfield = HTMLElement & { value: string; readOnly: boolean };
+export type MathSyntax = 'latex' | 'typst';
+
+type Mathfield = HTMLElement & {
+  value: string;
+  readOnly: boolean;
+  setValue?(value: string, options?: { format?: string }): void;
+  getValue?(format?: string): string;
+};
 
 let constructor: (new () => Mathfield) | null = null;
 let pending: Promise<void> | null = null;
@@ -17,10 +24,23 @@ function load(): Promise<void> {
   return pending;
 }
 
-function configure(field: Mathfield, latex: string, displayMode: boolean): void {
+// MathLive exports Typst but imports ASCIIMath, whose common names differ slightly.
+function typstInput(value: string): string {
+  return value
+    .replace(/\binfinity\b/g, 'oo')
+    .replace(/\bintegral\b/g, 'int')
+    .replace(/\bproduct\b/g, 'prod')
+    .replace(/\bdif\s+([A-Za-z])\b/g, 'd$1');
+}
+
+function configure(field: Mathfield, value: string, displayMode: boolean, syntax: MathSyntax): void {
   const options = field as unknown as Record<string, unknown>;
 
-  field.value = latex;
+  if (syntax === 'typst' && field.setValue) {
+    field.setValue(typstInput(value), { format: 'ascii-math' });
+  } else {
+    field.value = value;
+  }
   field.readOnly = false;
   options.mathVirtualKeyboardPolicy = 'auto';
   options.smartMode = true;
@@ -33,21 +53,27 @@ function configure(field: Mathfield, latex: string, displayMode: boolean): void 
   field.addEventListener('focusout', () => field.classList.remove('focused'));
 }
 
-export function createEditableMath(latex: string, displayMode = false): HTMLElement {
+export function readEditableMath(field: HTMLElement, syntax: MathSyntax): string | undefined {
+  const mathfield = field as Mathfield;
+  if (syntax === 'typst' && mathfield.getValue) return mathfield.getValue('typst');
+  return mathfield.value;
+}
+
+export function createEditableMath(value: string, displayMode = false, syntax: MathSyntax = 'latex'): HTMLElement {
   if (constructor) {
     const field = new constructor();
-    configure(field, latex, displayMode);
+    configure(field, value, displayMode, syntax);
     return field;
   }
 
   const placeholder = document.createElement('span');
   placeholder.className = 'cm-lv-math-placeholder';
-  placeholder.textContent = latex;
+  placeholder.textContent = value;
 
   load().then(() => {
     if (!constructor || !placeholder.isConnected) return;
     const field = new constructor();
-    configure(field, latex, displayMode);
+    configure(field, value, displayMode, syntax);
     placeholder.replaceWith(field);
   });
 

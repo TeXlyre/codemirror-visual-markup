@@ -23,7 +23,7 @@
   "peerDependencies": {
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "mathlive": ">=0.98.0"
+    "mathlive": ">=0.106.0"
   },
   "peerDependenciesMeta": {
     "mathlive": {

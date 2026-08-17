@@ -1,6 +1,6 @@
 import { EditorView, WidgetType } from '@codemirror/view';
 import { textOf } from '../core/tokens';
-import { createEditableMath } from './math-field';
+import { createEditableMath, readEditableMath, type MathSyntax } from './math-field';
 import { ImageResolver, imageResolver, isExternal, resolveImagePath } from './images';
 import { registerWidget, replaceRange, WidgetContext } from './widget-registry';
 
@@ -10,6 +10,7 @@ export class MathWidget extends WidgetType {
   private display: boolean;
   private open: string;
   private close: string;
+  private syntax: MathSyntax;
 
   constructor(context: WidgetContext) {
     super();
@@ -19,22 +20,26 @@ export class MathWidget extends WidgetType {
     this.display = Boolean(token.display);
     this.open = token.meta?.open ?? '$';
     this.close = token.meta?.close ?? '$';
+    this.syntax = context.language.id === 'typst' ? 'typst' : 'latex';
   }
 
   eq(other: WidgetType): boolean {
-    return other instanceof MathWidget && other.text === this.text;
+    return other instanceof MathWidget && other.text === this.text && other.syntax === this.syntax;
   }
 
   toDOM(view: EditorView): HTMLElement {
     const container = document.createElement(this.display ? 'div' : 'span');
     container.className = `cm-lv-widget cm-lv-math ${this.display ? 'cm-lv-math-display' : 'cm-lv-math-inline'}`;
 
-    const field = () => container.firstElementChild as (HTMLElement & { value: string }) | null;
+    const field = () => container.firstElementChild as (HTMLElement & { value?: string }) | null;
 
     const commit = () => {
       const element = field();
       if (!element || element.value === undefined) return;
-      replaceRange(view, container, this.text, `${this.open}${element.value}${this.close}`);
+      const value = readEditableMath(element, this.syntax);
+      if (value === undefined) return;
+      const content = this.syntax === 'typst' ? (this.display ? ` ${value.trim()} ` : value.trim()) : value;
+      replaceRange(view, container, this.text, `${this.open}${content}${this.close}`);
     };
 
     container.addEventListener('click', event => {
@@ -51,7 +56,7 @@ export class MathWidget extends WidgetType {
 
     container.addEventListener('change', commit);
 
-    container.appendChild(createEditableMath(this.content.trim(), this.display));
+    container.appendChild(createEditableMath(this.content.trim(), this.display, this.syntax));
     return container;
   }
 
