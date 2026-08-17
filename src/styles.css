@@ -220,10 +220,10 @@
 .cm-line.cm-lv-figure-simple {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   max-width: 100%;
-  text-align: center;
+  text-align: left;
 }
 
 .cm-line.cm-lv-figure-simple .cm-lv-image img {
@@ -232,17 +232,19 @@
   max-width: 100%;
   height: auto;
   max-height: 28rem;
-  margin-inline: auto;
+  margin-inline: 0;
   object-fit: contain;
 }
 
 .cm-line.cm-lv-figure-simple .cm-lv-caption {
   display: block;
   margin-top: 0.55em;
+  text-align: left;
 }
 
 .cm-line.cm-lv-figure-simple.cm-lv-figure-left { align-items: flex-start; }
 .cm-line.cm-lv-figure-simple.cm-lv-figure-right { align-items: flex-end; }
+.cm-line.cm-lv-figure-simple.cm-lv-figure-right .cm-lv-caption { text-align: right; }
 .cm-line.cm-lv-figure-simple.cm-lv-figure-wide { width: 100%; }
 .cm-line.cm-lv-figure-caption-top .cm-lv-caption { order: -1; }
 
