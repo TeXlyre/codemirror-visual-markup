@@ -226,6 +226,20 @@
   text-align: center;
 }
 
+.cm-line.cm-lv-figure-simple .cm-lv-image img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 28rem;
+  margin-inline: auto;
+  object-fit: contain;
+}
+
+.cm-line.cm-lv-figure-simple .cm-lv-caption {
+  display: block;
+  margin-top: 0.55em;
+}
 
 .cm-line.cm-lv-figure-simple.cm-lv-figure-left { align-items: flex-start; }
 .cm-line.cm-lv-figure-simple.cm-lv-figure-right { align-items: flex-end; }
@@ -245,13 +259,31 @@
   font-size: 0.88em;
 }
 
+.cm-lv-caption-editor,
+.cm-lv-caption-source {
+  cursor: text;
+}
+
+.cm-lv-caption-editor {
+  min-width: 1ch;
+  border-radius: 3px;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.cm-lv-caption-editor:focus {
+  color: var(--lv-fg);
+  background: color-mix(in srgb, var(--lv-primary) 8%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lv-primary) 35%, transparent);
+}
+
 .cm-lv-figure-preview {
   display: block;
   box-sizing: border-box;
   width: var(--lv-figure-width, fit-content);
   max-width: 100%;
-  margin: 0.75em auto;
-  padding: 0.35em;
+  margin: 0 auto;
+  padding: 0.75em 0.35em;
   text-align: center;
 }
 

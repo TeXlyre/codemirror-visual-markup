@@ -1,6 +1,6 @@
 import { EditorView, WidgetType } from '@codemirror/view';
 import type { FigureModel } from '../core/language';
-import { textOf } from '../core/tokens';
+import { textOf, type Range } from '../core/tokens';
 import { createEditableMath, readEditableMath, type MathSyntax } from './math-field';
 import { ImageResolver, imageResolver, isExternal, resolveImagePath } from './images';
 import { registerWidget, replaceRange, WidgetContext } from './widget-registry';
@@ -159,10 +159,12 @@ export class FigureWidget extends WidgetType {
   private resolver: ImageResolver | null;
   private destroyed = false;
   private table: TablePresentation | null;
+  private source: string;
 
   constructor(context: WidgetContext) {
     super();
     this.model = context.language.figure?.parse(context.source, context.token) ?? { panels: [] };
+    this.source = context.source;
     this.key = JSON.stringify(this.model);
     this.resolver = context.state.facet(imageResolver);
     this.table = tablePresentation(context.token);
@@ -172,7 +174,7 @@ export class FigureWidget extends WidgetType {
     return other instanceof FigureWidget && other.key === this.key && sameTablePresentation(other.table, this.table);
   }
 
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const container = document.createElement('span');
     container.className = 'cm-lv-widget cm-lv-figure-preview';
     if (this.model.wide) container.classList.add('cm-lv-figure-wide');
@@ -182,7 +184,14 @@ export class FigureWidget extends WidgetType {
     container.style.setProperty('--lv-figure-columns', String(Math.max(1, this.model.columns ?? 1)));
     applyTablePresentation(container, this.table);
 
-    const caption = this.model.caption ? figureCaption(this.model.caption, 'cm-lv-figure-caption') : null;
+    const caption = this.model.caption ? figureCaption(
+      view,
+      this.model.caption,
+      'cm-lv-figure-caption',
+      this.model.captionRange,
+      this.model.captionEditable,
+      this.source
+    ) : null;
     if (caption && this.model.captionPosition === 'top') container.appendChild(caption);
 
     const body = document.createElement('span');
@@ -195,10 +204,17 @@ export class FigureWidget extends WidgetType {
 
       const media = document.createElement('span');
       media.className = 'cm-lv-figure-media';
-      for (const item of panel.images) media.appendChild(this.image(item.src, item.alt, item.style));
+      for (const item of panel.images) media.appendChild(this.image(view, item.src, item.alt, item.style));
       panelDOM.appendChild(media);
 
-      if (panel.caption) panelDOM.appendChild(figureCaption(panel.caption, 'cm-lv-subcaption'));
+      if (panel.caption) panelDOM.appendChild(figureCaption(
+        view,
+        panel.caption,
+        'cm-lv-subcaption',
+        panel.captionRange,
+        panel.captionEditable,
+        this.source
+      ));
       body.appendChild(panelDOM);
     }
 
@@ -207,12 +223,14 @@ export class FigureWidget extends WidgetType {
     return container;
   }
 
-  private image(src: string, alt = '', style = ''): HTMLImageElement {
+  private image(view: EditorView, src: string, alt = '', style = ''): HTMLImageElement {
     const image = document.createElement('img');
     image.decoding = 'async';
     image.loading = 'lazy';
     image.alt = alt;
     image.title = src;
+    image.addEventListener('load', () => view.requestMeasure());
+    image.addEventListener('error', () => view.requestMeasure());
     if (style) image.setAttribute('style', style);
 
     if (!src) return image;
@@ -238,10 +256,54 @@ export class FigureWidget extends WidgetType {
   }
 }
 
-function figureCaption(text: string, className: string): HTMLElement {
+function figureCaption(
+  view: EditorView,
+  text: string,
+  className: string,
+  range?: Range,
+  editable = false,
+  source = ''
+): HTMLElement {
   const caption = document.createElement('span');
   caption.className = className;
   caption.textContent = text;
+
+  if (!range) return caption;
+
+  if (!editable) {
+    caption.classList.add('cm-lv-caption-source');
+    caption.title = 'Click to edit caption source';
+    caption.addEventListener('mousedown', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      view.dispatch({ selection: { anchor: range.from } });
+      view.focus();
+    });
+    return caption;
+  }
+
+  caption.classList.add('cm-lv-caption-editor');
+  caption.setAttribute('contenteditable', 'plaintext-only');
+  caption.setAttribute('role', 'textbox');
+  caption.setAttribute('aria-label', className.includes('subcaption') ? 'Edit subcaption' : 'Edit caption');
+  caption.spellcheck = true;
+  const original = text;
+  const originalSource = source.slice(range.from, range.to);
+
+  caption.addEventListener('mousedown', event => event.stopPropagation());
+  caption.addEventListener('click', event => event.stopPropagation());
+  caption.addEventListener('keydown', event => {
+    if ((event as KeyboardEvent).key === 'Escape') {
+      caption.textContent = original;
+      caption.blur();
+    }
+  });
+  caption.addEventListener('blur', () => {
+    const next = caption.textContent ?? '';
+    if (next === original) return;
+    if (view.state.doc.sliceString(range.from, range.to) !== originalSource) return;
+    view.dispatch({ changes: { from: range.from, to: range.to, insert: next } });
+  });
   return caption;
 }
 

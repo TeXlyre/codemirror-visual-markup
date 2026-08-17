@@ -18,6 +18,7 @@ export const figure: FigureAdapter = {
     const direct = token.children ?? [];
     const captionToken = direct.find(child => child.kind === 'command' && CAPTION_COMMANDS.has(child.name ?? ''));
     const caption = captionToken ? captionFromCommand(source, captionToken) : undefined;
+    const captionRange = captionToken ? captionRangeFromCommand(source, captionToken) : undefined;
     const panels: FigurePanel[] = [];
     const panelStarts: number[] = [];
 
@@ -38,6 +39,8 @@ export const figure: FigureAdapter = {
         return decorateModel(source, token, {
           panels,
           caption,
+          captionRange,
+          captionEditable: captionRange ? editableCaption(source, captionRange) : false,
           columns: Math.max(1, rows),
           captionPosition: captionToken && captionToken.from < firstImage ? 'top' : 'bottom'
         });
@@ -48,6 +51,8 @@ export const figure: FigureAdapter = {
     return decorateModel(source, token, {
       panels,
       caption,
+      captionRange,
+      captionEditable: captionRange ? editableCaption(source, captionRange) : false,
       columns: inferredPanelColumns(source, panels, candidates),
       captionPosition: captionToken && panelStarts.length && captionToken.from < Math.min(...panelStarts) ? 'top' : 'bottom'
     });
@@ -120,25 +125,32 @@ function panelFromRange(source: string, token: Token, range: Range): FigurePanel
   const images = imageTokens(token.children ?? []).map(image => imageFromToken(source, image));
   const captionToken = (token.children ?? []).find(child => child.kind === 'command' && CAPTION_COMMANDS.has(child.name ?? ''));
   const caption = captionToken ? captionFromCommand(source, captionToken) : undefined;
+  const captionRange = captionToken ? captionRangeFromCommand(source, captionToken) : undefined;
   const width = token.args?.[0] ? latexDimension(source.slice(token.args[0].from, token.args[0].to).trim()) ?? undefined : undefined;
-  return { images, caption, width };
+  return { images, caption, captionRange, captionEditable: captionRange ? editableCaption(source, captionRange) : false, width };
 }
 
 function panelFromCommand(source: string, token: Token): FigurePanel {
   const images = imageTokens(token.children ?? []).map(image => imageFromToken(source, image));
   let caption: string | undefined;
+  let captionRange: Range | undefined;
 
   if (token.name === 'subcaptionbox' && token.args?.[0]) {
-    caption = plainCaption(source.slice(token.args[0].from, token.args[0].to));
+    captionRange = token.args[0];
+    caption = plainCaption(source.slice(captionRange.from, captionRange.to));
   } else if (token.name === 'ffigbox' && token.args && token.args.length >= 2) {
     caption = plainCaption(source.slice(token.args[token.args.length - 2].from, token.args[token.args.length - 2].to));
   } else {
-    const raw = source.slice(token.from, token.to);
-    const optional = /^\\(?:subfloat|subfigure)\s*\[([\s\S]*?)\]/.exec(raw)?.[1];
-    if (optional) caption = plainCaption(optional);
+    captionRange = optionalCaptionRange(source, token) ?? undefined;
+    if (captionRange) caption = plainCaption(source.slice(captionRange.from, captionRange.to));
   }
 
-  return { images, caption };
+  return {
+    images,
+    caption,
+    captionRange,
+    captionEditable: captionRange ? editableCaption(source, captionRange) : false
+  };
 }
 
 function captionFromCommand(source: string, token: Token): string | undefined {
@@ -148,6 +160,38 @@ function captionFromCommand(source: string, token: Token): string | undefined {
   }
   if (!token.body) return undefined;
   return plainCaption(source.slice(token.body.from, token.body.to));
+}
+
+function captionRangeFromCommand(_source: string, token: Token): Range | undefined {
+  if (token.name === 'captionof' && token.args && token.args.length > 1) {
+    return token.args[token.args.length - 1];
+  }
+  return token.body;
+}
+
+function optionalCaptionRange(source: string, token: Token): Range | null {
+  if (token.name !== 'subfloat' && token.name !== 'subfigure') return null;
+  const raw = source.slice(token.from, token.to);
+  const command = /^\\(?:subfloat|subfigure)\b/.exec(raw);
+  if (!command) return null;
+  let cursor = command[0].length;
+  while (cursor < raw.length && /\s/.test(raw[cursor])) cursor++;
+  if (raw[cursor] !== '[') return null;
+
+  let depth = 1;
+  for (let index = cursor + 1; index < raw.length; index++) {
+    if (raw[index] === '\\') { index++; continue; }
+    if (raw[index] === '[') depth++;
+    else if (raw[index] === ']' && --depth === 0) {
+      return { from: token.from + cursor + 1, to: token.from + index };
+    }
+  }
+  return null;
+}
+
+function editableCaption(source: string, range: Range): boolean {
+  const raw = source.slice(range.from, range.to);
+  return !/[\\{}]/.test(raw);
 }
 
 function imageFromToken(source: string, token: Token): FigureImage {

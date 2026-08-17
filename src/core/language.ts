@@ -67,12 +67,16 @@ export interface FigureImage {
 export interface FigurePanel {
   images: FigureImage[];
   caption?: string;
+  captionRange?: Range;
+  captionEditable?: boolean;
   width?: string;
 }
 
 export interface FigureModel {
   panels: FigurePanel[];
   caption?: string;
+  captionRange?: Range;
+  captionEditable?: boolean;
   columns?: number;
   tracks?: string[];
   wide?: boolean;

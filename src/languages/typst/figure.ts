@@ -65,12 +65,16 @@ function figureModel(source: string, range: Range): FigureModel | null {
 
   const panels = panelsFromExpression(source, bodyText);
   if (!panels.length) return null;
+  assignPanelCaptionRanges(source, body, panels);
 
+  const captionRange = captionEntry ? captionBodyRange(source, captionEntry.range) ?? undefined : undefined;
   const columns = columnsFromExpression(bodyText, panels.length);
   const scope = valueOf(source, entries, 'scope');
   return {
     panels,
     caption,
+    captionRange,
+    captionEditable: captionRange ? editableCaption(source, captionRange) : false,
     captionPosition,
     columns,
     tracks: tracksFromExpression(bodyText),
@@ -90,7 +94,9 @@ function subparModel(source: string, range: Range): FigureModel | null {
     panels.push(...nested);
   }
   if (!panels.length) return null;
+  assignPanelCaptionRanges(source, range, panels);
   const captionEntry = entries.find(entry => entry.name === 'caption');
+  const captionRange = captionEntry ? captionBodyRange(source, captionEntry.range) ?? undefined : undefined;
   const columnsValue = valueOf(source, entries, 'columns');
   let columns = Math.min(4, panels.length);
   if (columnsValue && /^\d+$/.test(columnsValue.trim())) columns = Math.max(1, Number(columnsValue));
@@ -100,6 +106,8 @@ function subparModel(source: string, range: Range): FigureModel | null {
   return {
     panels,
     caption: captionEntry ? captionText(source, captionEntry.range) : undefined,
+    captionRange,
+    captionEditable: captionRange ? editableCaption(source, captionRange) : false,
     captionPosition: 'bottom',
     columns,
     tracks: trackList(columnsValue),
@@ -208,6 +216,48 @@ function imageFromCall(call: ParsedCall): FigureImage {
     alt: src.slice(src.lastIndexOf('/') + 1),
     style: style.length ? style.join(';') : undefined
   };
+}
+
+
+function assignPanelCaptionRanges(source: string, range: Range, panels: FigurePanel[]): void {
+  const captions = nestedCaptionRanges(source, range);
+  let index = 0;
+  for (const panel of panels) {
+    if (!panel.caption) continue;
+    const caption = captions[index++];
+    if (!caption) continue;
+    panel.captionRange = caption;
+    panel.captionEditable = editableCaption(source, caption);
+  }
+}
+
+function nestedCaptionRanges(source: string, range: Range): Range[] {
+  const result: Range[] = [];
+  let cursor = range.from;
+  const pattern = /\b(?:figure|subfigure)\s*\(/g;
+
+  while (cursor < range.to) {
+    pattern.lastIndex = cursor;
+    const match = pattern.exec(source);
+    if (!match || match.index >= range.to) break;
+    const open = source.indexOf('(', match.index);
+    if (open < 0 || open >= range.to) break;
+    const call = delimitedRange(source, open, '(', ')', range.to);
+    if (!call) { cursor = open + 1; continue; }
+
+    const entries = argumentEntries(source, { from: open + 1, to: call.to - 1 });
+    const caption = entries.find(entry => entry.name === 'caption')?.range;
+    const body = caption ? captionBodyRange(source, caption) : null;
+    if (body) result.push(body);
+    cursor = call.to;
+  }
+
+  return result;
+}
+
+function editableCaption(source: string, range: Range): boolean {
+  const raw = source.slice(range.from, range.to);
+  return !/[#*_`\[\]]/.test(raw);
 }
 
 

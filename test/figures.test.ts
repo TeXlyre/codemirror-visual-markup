@@ -58,6 +58,33 @@ describe('figure layouts', () => {
     expect(view.contentDOM.textContent).toContain('subfigure');
   });
 
+  it('edits compound LaTeX captions and subcaptions in place', () => {
+    const doc = [
+      'intro',
+      '\\begin{figure}',
+      '  \\begin{subfigure}{0.48\\textwidth}',
+      '    \\includegraphics{https://example.com/a.png}',
+      '    \\caption{Alpha}',
+      '  \\end{subfigure}',
+      '  \\caption{Overall}',
+      '\\end{figure}',
+      'after'
+    ].join('\n');
+    const view = mount(doc);
+
+    const subcaption = view.contentDOM.querySelector('.cm-lv-subcaption.cm-lv-caption-editor') as HTMLElement;
+    expect(subcaption).not.toBeNull();
+    subcaption.textContent = 'Edited alpha';
+    subcaption.dispatchEvent(new FocusEvent('blur'));
+    expect(view.state.doc.toString()).toContain('\\caption{Edited alpha}');
+
+    const caption = view.contentDOM.querySelector('.cm-lv-figure-caption.cm-lv-caption-editor') as HTMLElement;
+    expect(caption).not.toBeNull();
+    caption.textContent = 'Edited overall';
+    caption.dispatchEvent(new FocusEvent('blur'));
+    expect(view.state.doc.toString()).toContain('\\caption{Edited overall}');
+  });
+
   it('supports legacy LaTeX subfloat syntax and wide figure variants', () => {
     const doc = [
       'intro',
@@ -122,6 +149,35 @@ describe('Typst figure layouts', () => {
     expect(images(view)).toHaveLength(2);
     expect(Array.from(view.contentDOM.querySelectorAll('.cm-lv-subcaption'), node => node.textContent)).toEqual(['Alpha', 'Beta']);
     expect(figure.style.getPropertyValue('--lv-figure-columns')).toBe('2');
+  });
+
+  it('edits compound Typst captions and subcaptions in place', () => {
+    const doc = [
+      'intro',
+      '',
+      '#figure(',
+      '  grid(',
+      '    columns: 2,',
+      '    figure(image("https://example.com/a.png"), caption: [Alpha]),',
+      '    figure(image("https://example.com/b.png"), caption: [Beta]),',
+      '  ),',
+      '  caption: [Overall],',
+      ')',
+      'after'
+    ].join('\n');
+    const view = mount(doc, 'typst');
+
+    const subcaption = view.contentDOM.querySelector('.cm-lv-subcaption.cm-lv-caption-editor') as HTMLElement;
+    expect(subcaption).not.toBeNull();
+    subcaption.textContent = 'Edited alpha';
+    subcaption.dispatchEvent(new FocusEvent('blur'));
+    expect(view.state.doc.toString()).toContain('caption: [Edited alpha]');
+
+    const caption = view.contentDOM.querySelector('.cm-lv-figure-caption.cm-lv-caption-editor') as HTMLElement;
+    expect(caption).not.toBeNull();
+    caption.textContent = 'Edited overall';
+    caption.dispatchEvent(new FocusEvent('blur'));
+    expect(view.state.doc.toString()).toContain('caption: [Edited overall]');
   });
 
   it('supports subpar.grid subfigures', () => {
