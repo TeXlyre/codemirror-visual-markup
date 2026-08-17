@@ -13,7 +13,7 @@ export interface RuleContext {
 
 export type Rule = (source: string, pos: number, ctx: RuleContext) => Token | null;
 
-export type WidgetKind = 'math' | 'image';
+export type WidgetKind = 'math' | 'image' | 'figure';
 
 export interface TokenStyle {
   class?: string;
@@ -57,6 +57,34 @@ export interface TableAdapter {
   editable?(source: string, token: Token): boolean;
 }
 
+
+export interface FigureImage {
+  src: string;
+  alt?: string;
+  style?: string;
+}
+
+export interface FigurePanel {
+  images: FigureImage[];
+  caption?: string;
+  width?: string;
+}
+
+export interface FigureModel {
+  panels: FigurePanel[];
+  caption?: string;
+  columns?: number;
+  tracks?: string[];
+  wide?: boolean;
+  align?: 'left' | 'center' | 'right';
+  width?: string;
+  captionPosition?: 'top' | 'bottom' | 'side';
+}
+
+export interface FigureAdapter {
+  parse(source: string, token: Token): FigureModel | null;
+}
+
 export interface Language {
   id: string;
   name: string;
@@ -64,8 +92,10 @@ export interface Language {
   style(token: Token): TokenStyle | null;
   commands: LanguageCommands;
   table?: TableAdapter;
+  figure?: FigureAdapter;
   colorCommands?: string[];
   imageSrc?(source: string, token: Token): string | null;
+  imageStyle?(source: string, token: Token): string | null;
   toolbar?(scope: EditorScope): ToolbarEntry[];
 }
 

@@ -13,7 +13,7 @@ export {
 export type { EditorConfig, LatexEditorConfig, ThemeColors } from './core/config';
 
 export { getLanguage, listLanguages, registerLanguage } from './core/language';
-export type { Language, LanguageCommands, Rule, RuleContext, TableAdapter, TokenStyle, WidgetKind } from './core/language';
+export type { FigureAdapter, FigureImage, FigureModel, FigurePanel, Language, LanguageCommands, Rule, RuleContext, TableAdapter, TokenStyle, WidgetKind } from './core/language';
 
 export {
   createColorItem,
@@ -45,7 +45,7 @@ export type { RevealRange } from './view/decorations';
 export type { BuildOptions, BuildResult } from './view/decorations';
 export { createWidget, registerWidget, replaceRange } from './view/widget-registry';
 export type { WidgetContext, WidgetFactory } from './view/widget-registry';
-export { ImageWidget, MathWidget } from './view/widgets';
+export { FigureWidget, ImageWidget, MathWidget } from './view/widgets';
 export { createImageResolver, imageResolver, isExternal, resolveImagePath } from './view/images';
 export type { ImageFetcher, ImageResolver } from './view/images';
 export { createEditableMath, preloadMath } from './view/math-field';

@@ -3,6 +3,7 @@ import { registerLanguage, Language, LanguageCommands, TokenStyle } from '../../
 import { Token } from '../../core/tokens';
 import { rules } from './rules';
 import { table } from './table';
+import { figure, typstImageStyle } from './figure';
 
 const CLASSES = new Map([
   ['strong', 'cm-lv-bold'],
@@ -60,11 +61,19 @@ function style(token: Token): TokenStyle | null {
       if (token.name === 'string') return { class: 'cm-lv-string' };
       return token.name ? { class: 'cm-lv-mono', keepSyntax: token.name === 'block' } : null;
     case 'container':
+      if (token.meta?.figureCaption === 'true') return { class: 'cm-lv-caption' };
       return { class: 'cm-lv-content' };
     case 'table':
       return { class: 'cm-lv-table', block: true };
     case 'command': {
       if (token.name === 'image') return { widget: 'image' };
+      if (token.meta?.figureComposite === 'true') return { widget: 'figure', block: true, keepSyntax: true };
+      if (token.meta?.figure === 'true') {
+        const classes = ['cm-lv-figure', 'cm-lv-figure-simple'];
+        if (token.meta.figureWide === 'true') classes.push('cm-lv-figure-wide');
+        if (token.meta.figureCaptionTop === 'true') classes.push('cm-lv-figure-caption-top');
+        return { class: classes.join(' '), block: true };
+      }
       if (token.meta?.statement) return { class: 'cm-lv-cmd-unknown', keepSyntax: true };
       if (token.meta?.args === 'code') return {};
       if (token.name === 'text' || token.name === 'highlight') {
@@ -92,6 +101,7 @@ export const typst: Language = {
   style,
   commands,
   table,
+  figure,
   colorCommands: ['text', 'highlight'],
   imageSrc(source, token) {
     const args = token.args?.[0];
@@ -99,7 +109,8 @@ export const typst: Language = {
 
     const match = /^\s*["']([^"']+)["']/.exec(source.slice(args.from, args.to));
     return match ? match[1] : null;
-  }
+  },
+  imageStyle: typstImageStyle
 };
 
 export { rules } from './rules';

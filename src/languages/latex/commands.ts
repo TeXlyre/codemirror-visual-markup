@@ -2,7 +2,8 @@ export const EDITABLE_COMMANDS = new Set([
   'textbf', 'textit', 'emph', 'underline', 'textsc', 'textsf', 'texttt',
   'section', 'subsection', 'subsubsection', 'title', 'author', 'date',
   'footnote', 'cite', 'citeyear', 'citep', 'citey', 'ref', 'label', 'url', 'href',
-  'textcolor', 'color', 'colorbox', 'fcolorbox', 'multicolumn', 'multirow'
+  'textcolor', 'color', 'colorbox', 'fcolorbox', 'multicolumn', 'multirow',
+  'caption', 'caption*', 'subcaption', 'captionof'
 ]);
 
 export const FORMATTING_COMMANDS = new Map([
@@ -21,7 +22,11 @@ export const COMMAND_CLASSES = new Map([
   ['texttt', 'cm-lv-mono'],
   ['textcolor', 'cm-lv-colored'],
   ['colorbox', 'cm-lv-colorbox'],
-  ['fcolorbox', 'cm-lv-colorbox']
+  ['fcolorbox', 'cm-lv-colorbox'],
+  ['caption', 'cm-lv-caption'],
+  ['caption*', 'cm-lv-caption'],
+  ['subcaption', 'cm-lv-subcaption'],
+  ['captionof', 'cm-lv-caption']
 ]);
 
 export const HEADING_LEVELS = new Map([

@@ -33,8 +33,15 @@ $$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
 \\end{tabular}
 
 \\begin{figure}
-  \\includegraphics{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
-  \\caption{A caption stays editable}
+  \\begin{subfigure}{0.46\\textwidth}
+    \\includegraphics[width=\\linewidth]{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
+    \\caption{First panel}
+  \\end{subfigure}\\hfill
+  \\begin{subfigure}{0.46\\textwidth}
+    \\includegraphics[width=\\linewidth]{https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png}
+    \\caption{Second panel}
+  \\end{subfigure}
+  \\caption{Subfigures stay grouped and aligned}
 \\end{figure}
 
 \\begin{lstlisting}
@@ -44,7 +51,9 @@ int main() { return 0; }
 % comments stay dimmed
 \\textcolor{red}{Coloured text} and \\unknowncommand{raw}.`,
 
-  typst: `= Introduction
+  typst: `#import "@preview/subpar:0.2.2"
+
+= Introduction
 
 Text with *bold _and nested_* plus inline math $E = m c^2$.
 
@@ -56,9 +65,17 @@ $ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $
 - Second item
 - Nested entries work too
 
-#figure(
-  image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png"),
-  caption: [A caption stays editable],
+#subpar.grid(
+  figure(
+    image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png", width: 80%),
+    caption: [First panel],
+  ), <a>,
+  figure(
+    image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png", width: 80%),
+    caption: [Second panel],
+  ), <b>,
+  columns: (1fr, 1fr),
+  caption: [Two subfigures side by side],
 )
 
 #emph[Call with content] and #text(fill: red)[coloured].

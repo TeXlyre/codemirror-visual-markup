@@ -1,4 +1,5 @@
 import { EditorView, WidgetType } from '@codemirror/view';
+import type { FigureModel } from '../core/language';
 import { textOf } from '../core/tokens';
 import { createEditableMath, readEditableMath, type MathSyntax } from './math-field';
 import { ImageResolver, imageResolver, isExternal, resolveImagePath } from './images';
@@ -85,11 +86,13 @@ export class ImageWidget extends WidgetType {
   private src: string;
   private alt: string;
   private destroyed = false;
+  private style: string;
 
   constructor(context: WidgetContext) {
     super();
     this.src = context.language.imageSrc?.(context.source, context.token) ?? '';
     this.alt = this.src.slice(this.src.lastIndexOf('/') + 1);
+    this.style = context.language.imageStyle?.(context.source, context.token) ?? '';
     this.resolver = context.state.facet(imageResolver);
     this.table = tablePresentation(context.token);
   }
@@ -101,6 +104,7 @@ export class ImageWidget extends WidgetType {
     return (
       other instanceof ImageWidget &&
       other.src === this.src &&
+      other.style === this.style &&
       sameTablePresentation(other.table, this.table)
     );
   }
@@ -115,6 +119,7 @@ export class ImageWidget extends WidgetType {
     image.loading = 'lazy';
     image.alt = this.alt;
     image.title = this.src;
+    if (this.style) image.setAttribute('style', this.style);
     container.appendChild(image);
 
     if (!this.src) {
@@ -148,6 +153,99 @@ export class ImageWidget extends WidgetType {
 }
 
 
+export class FigureWidget extends WidgetType {
+  private model: FigureModel;
+  private key: string;
+  private resolver: ImageResolver | null;
+  private destroyed = false;
+  private table: TablePresentation | null;
+
+  constructor(context: WidgetContext) {
+    super();
+    this.model = context.language.figure?.parse(context.source, context.token) ?? { panels: [] };
+    this.key = JSON.stringify(this.model);
+    this.resolver = context.state.facet(imageResolver);
+    this.table = tablePresentation(context.token);
+  }
+
+  eq(other: WidgetType): boolean {
+    return other instanceof FigureWidget && other.key === this.key && sameTablePresentation(other.table, this.table);
+  }
+
+  toDOM(): HTMLElement {
+    const container = document.createElement('span');
+    container.className = 'cm-lv-widget cm-lv-figure-preview';
+    if (this.model.wide) container.classList.add('cm-lv-figure-wide');
+    if (this.model.align) container.classList.add(`cm-lv-figure-${this.model.align}`);
+    if (this.model.captionPosition === 'side') container.classList.add('cm-lv-figure-caption-side');
+    if (this.model.width) container.style.setProperty('--lv-figure-width', this.model.width);
+    container.style.setProperty('--lv-figure-columns', String(Math.max(1, this.model.columns ?? 1)));
+    applyTablePresentation(container, this.table);
+
+    const caption = this.model.caption ? figureCaption(this.model.caption, 'cm-lv-figure-caption') : null;
+    if (caption && this.model.captionPosition === 'top') container.appendChild(caption);
+
+    const body = document.createElement('span');
+    body.className = 'cm-lv-figure-body';
+    if (this.model.tracks?.length) body.style.gridTemplateColumns = this.model.tracks.join(' ');
+
+    for (const panel of this.model.panels) {
+      const panelDOM = document.createElement('span');
+      panelDOM.className = 'cm-lv-figure-panel';
+
+      const media = document.createElement('span');
+      media.className = 'cm-lv-figure-media';
+      for (const item of panel.images) media.appendChild(this.image(item.src, item.alt, item.style));
+      panelDOM.appendChild(media);
+
+      if (panel.caption) panelDOM.appendChild(figureCaption(panel.caption, 'cm-lv-subcaption'));
+      body.appendChild(panelDOM);
+    }
+
+    container.appendChild(body);
+    if (caption && this.model.captionPosition !== 'top') container.appendChild(caption);
+    return container;
+  }
+
+  private image(src: string, alt = '', style = ''): HTMLImageElement {
+    const image = document.createElement('img');
+    image.decoding = 'async';
+    image.loading = 'lazy';
+    image.alt = alt;
+    image.title = src;
+    if (style) image.setAttribute('style', style);
+
+    if (!src) return image;
+    if (isExternal(src) || !this.resolver) {
+      image.src = src;
+      return image;
+    }
+
+    const path = resolveImagePath(this.resolver.currentPath(), src);
+    Promise.resolve(this.resolver.resolve(path, src)).then(url => {
+      if (!this.destroyed && url) image.src = url;
+      else if (!url) image.classList.add('cm-lv-image-missing');
+    });
+    return image;
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+  }
+
+  ignoreEvent(): boolean {
+    return true;
+  }
+}
+
+function figureCaption(text: string, className: string): HTMLElement {
+  const caption = document.createElement('span');
+  caption.className = className;
+  caption.textContent = text;
+  return caption;
+}
+
+
 function tablePresentation(token: WidgetContext['token']): TablePresentation | null {
   const meta = token.meta;
   if (!meta?.tableClass || !meta.tableStyle) return null;
@@ -174,7 +272,7 @@ function sameTablePresentation(a: TablePresentation | null, b: TablePresentation
 function applyTablePresentation(element: HTMLElement, table: TablePresentation | null): void {
   if (!table) return;
   element.classList.add(...table.className.split(/\s+/).filter(Boolean));
-  element.setAttribute('style', table.style);
+  element.style.cssText = [element.style.cssText, table.style].filter(Boolean).join(';');
   element.dataset.lvColumn = table.column;
   element.dataset.lvColspan = table.colspan;
   element.dataset.lvRowspan = table.rowspan;
@@ -193,3 +291,4 @@ function keepsFocus(event: FocusEvent, container: HTMLElement): boolean {
 
 registerWidget('math', context => new MathWidget(context));
 registerWidget('image', context => new ImageWidget(context));
+registerWidget('figure', context => context.language.figure ? new FigureWidget(context) : null);

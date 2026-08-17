@@ -2,6 +2,7 @@ import { Rule } from '../../core/language';
 import { Range, Token } from '../../core/tokens';
 import { inner, isEscaped, matchDelimited, matchFenced, matchLine, skipSpace } from '../../core/scanner';
 import { ARGUMENT_COUNT, ESCAPABLE, HEADING_LEVELS, MATH_ENVIRONMENTS, TABLE_ENVIRONMENT_ARGS, TABLE_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
+import { FIGURE_ENVIRONMENTS, isCompositeFigure, latexDimension } from './figure';
 
 const MATH_DELIMITERS: Array<[string, string, boolean]> = [
   ['$$', '$$', true],
@@ -71,6 +72,19 @@ export const environment: Rule = (source, pos, ctx) => {
     token.kind = 'math';
     token.display = true;
     token.children = undefined;
+  } else if (FIGURE_ENVIRONMENTS.has(name)) {
+    token.meta = { ...token.meta, figure: 'true' };
+    if (name === 'figure*' || name === 'SCfigure*' || name === 'sidewaysfigure' || name === 'sidewaysfigure*') token.meta.figureWide = 'true';
+    if ((name === 'wrapfigure' || name === 'wrapfigure*') && token.args?.[0]) {
+      const side = source.slice(token.args[0].from, token.args[0].to).trim().toLowerCase();
+      if (/l/.test(side)) token.meta.figureAlign = 'left';
+      else if (/r/.test(side)) token.meta.figureAlign = 'right';
+      if (token.args[1]) {
+        const width = latexDimension(source.slice(token.args[1].from, token.args[1].to).trim());
+        if (width) token.meta.figureWidth = width;
+      }
+    }
+    if (isCompositeFigure(source, token)) token.meta.figureComposite = 'true';
   }
 
   return token;

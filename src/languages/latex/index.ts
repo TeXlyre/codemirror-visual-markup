@@ -4,6 +4,13 @@ import { Token } from '../../core/tokens';
 import { ARGUMENT_COUNT, COMMAND_CLASSES, EDITABLE_COMMANDS, LIST_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
 import { rules } from './rules';
 import { table } from './table';
+import { figure, latexImageStyle } from './figure';
+
+
+const HIDDEN_LAYOUT_COMMANDS = new Set([
+  'centering', 'raggedleft', 'raggedright', 'hfill', 'hfil',
+  'hspace', 'hspace*', 'vspace', 'vspace*', 'smallskip', 'medskip', 'bigskip'
+]);
 
 const commands: LanguageCommands = {
   wrap: {
@@ -52,13 +59,25 @@ function style(token: Token): TokenStyle | null {
     case 'item':
       return { replaceWith: '•' };
     case 'container':
+      if (token.meta?.figureComposite === 'true') return { widget: 'figure', block: true, keepSyntax: true };
+      if (token.meta?.figure === 'true') {
+        const classes = ['cm-lv-figure', 'cm-lv-figure-simple'];
+        if (token.meta.figureWide === 'true') classes.push('cm-lv-figure-wide');
+        if (token.meta.figureAlign) classes.push(`cm-lv-figure-${token.meta.figureAlign}`);
+        return {
+          class: classes.join(' '),
+          block: true,
+          attributes: token.meta.figureWidth ? { style: `width:${token.meta.figureWidth};max-width:100%` } : undefined
+        };
+      }
       return {
         class: LIST_ENVIRONMENTS.has(token.name!) ? 'cm-lv-list' : 'cm-lv-env',
         block: true,
         keepSyntax: VERBATIM_ENVIRONMENTS.has(token.name!)
       };
     case 'command': {
-      if (token.name === 'includegraphics') return { widget: 'image' };
+      if (token.name === 'includegraphics' || token.name === 'includegraphics*') return { widget: 'image' };
+      if (HIDDEN_LAYOUT_COMMANDS.has(token.name ?? '')) return { hidden: true };
       const known = COMMAND_CLASSES.get(token.name!);
       if (known) {
         const color = cssColor(token.meta?.color);
@@ -86,10 +105,12 @@ export const latex: Language = {
   style,
   commands,
   table,
+  figure,
   colorCommands: ['textcolor', 'colorbox', 'color', 'fcolorbox'],
   imageSrc(source, token) {
     return token.body ? source.slice(token.body.from, token.body.to).trim() : null;
-  }
+  },
+  imageStyle: latexImageStyle
 };
 
 export function setMacroSignatures(signatures: Record<string, { signature?: string } | number>): void {

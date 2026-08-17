@@ -1,6 +1,7 @@
 import { ParseMode, Rule, RuleContext } from '../../core/language';
 import { Range, Token } from '../../core/tokens';
 import { atLineStart, inner, matchDelimited, matchFenced, matchLine } from '../../core/scanner';
+import { prepareFigureToken } from './figure';
 
 const CODE_KEYWORDS = new Set(['let', 'set', 'show', 'import', 'include', 'if', 'else', 'for', 'while']);
 
@@ -135,6 +136,7 @@ function callToken(source: string, pos: number, ctx: RuleContext, prefix: number
     token.meta = { ...token.meta, args: 'code' };
   }
 
+  if (name === 'figure' || name === 'subpar.grid') prepareFigureToken(source, token);
   return token;
 }
 
