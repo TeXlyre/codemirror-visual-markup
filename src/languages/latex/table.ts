@@ -160,6 +160,7 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
   let cursor = start;
   let braces = 0;
   let brackets = 0;
+  let structuralOnly = false;
 
   const pushCell = (end: number) => {
     const range = cleanCell(source, { from: start, to: end });
@@ -199,10 +200,14 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
     if (char === '\\') {
       if (braces === 0 && brackets === 0) {
         if (source.startsWith('\\\\', cursor)) {
-          pushCell(cursor);
-          pushRow();
+          const empty = cells.length === 0 && !source.slice(start, cursor).trim();
+          if (!(structuralOnly && empty)) {
+            pushCell(cursor);
+            pushRow();
+          }
           cursor = skipRowBreak(source, cursor + 2, token.body.to);
           start = cursor;
+          structuralOnly = false;
           continue;
         }
 
@@ -214,16 +219,21 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
 
         const command = /^\\([a-zA-Z]+\*?)/.exec(source.slice(cursor));
         if (command?.[1] === 'tabularnewline' || command?.[1] === 'cr') {
-          pushCell(cursor);
-          pushRow();
+          const empty = cells.length === 0 && !source.slice(start, cursor).trim();
+          if (!(structuralOnly && empty)) {
+            pushCell(cursor);
+            pushRow();
+          }
           cursor = skipRowBreak(source, cursor + command[0].length, token.body.to);
           start = cursor;
+          structuralOnly = false;
           continue;
         }
 
         if (command && (ROW_COMMANDS.has(command[1]) || META_COMMANDS.has(command[1])) && /^\s*$/.test(source.slice(start, cursor))) {
           cursor = skipCommand(source, cursor + command[0].length, token.body.to);
           start = cursor;
+          structuralOnly = true;
           continue;
         }
       }
@@ -238,6 +248,7 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
     else if (char === ']' && brackets > 0) brackets--;
     else if (char === '&' && braces === 0 && brackets === 0) {
       pushCell(cursor);
+      structuralOnly = false;
       cursor++;
       start = cursor;
       continue;
@@ -246,7 +257,7 @@ function tableRanges(source: string, token: Token): TableCellRange[][] {
     cursor++;
   }
 
-  if (source.slice(start, token.body.to).trim() || cells.length) pushCell(token.body.to);
+  if (!structuralOnly && (source.slice(start, token.body.to).trim() || cells.length)) pushCell(token.body.to);
   pushRow();
 
   const result = rows.filter(row => row.length > 0);

@@ -4,6 +4,14 @@ import { createEditableMath, readEditableMath, type MathSyntax } from './math-fi
 import { ImageResolver, imageResolver, isExternal, resolveImagePath } from './images';
 import { registerWidget, replaceRange, WidgetContext } from './widget-registry';
 
+interface TablePresentation {
+  className: string;
+  style: string;
+  column: string;
+  colspan: string;
+  rowspan: string;
+}
+
 export class MathWidget extends WidgetType {
   private text: string;
   private content: string;
@@ -11,6 +19,7 @@ export class MathWidget extends WidgetType {
   private open: string;
   private close: string;
   private syntax: MathSyntax;
+  private table: TablePresentation | null;
 
   constructor(context: WidgetContext) {
     super();
@@ -21,15 +30,22 @@ export class MathWidget extends WidgetType {
     this.open = token.meta?.open ?? '$';
     this.close = token.meta?.close ?? '$';
     this.syntax = context.language.id === 'typst' ? 'typst' : 'latex';
+    this.table = tablePresentation(token);
   }
 
   eq(other: WidgetType): boolean {
-    return other instanceof MathWidget && other.text === this.text && other.syntax === this.syntax;
+    return (
+      other instanceof MathWidget &&
+      other.text === this.text &&
+      other.syntax === this.syntax &&
+      sameTablePresentation(other.table, this.table)
+    );
   }
 
   toDOM(view: EditorView): HTMLElement {
     const container = document.createElement(this.display ? 'div' : 'span');
     container.className = `cm-lv-widget cm-lv-math ${this.display ? 'cm-lv-math-display' : 'cm-lv-math-inline'}`;
+    applyTablePresentation(container, this.table);
 
     const field = () => container.firstElementChild as (HTMLElement & { value?: string }) | null;
 
@@ -75,17 +91,24 @@ export class ImageWidget extends WidgetType {
     this.src = context.language.imageSrc?.(context.source, context.token) ?? '';
     this.alt = this.src.slice(this.src.lastIndexOf('/') + 1);
     this.resolver = context.state.facet(imageResolver);
+    this.table = tablePresentation(context.token);
   }
 
   private resolver: ImageResolver | null;
+  private table: TablePresentation | null;
 
   eq(other: WidgetType): boolean {
-    return other instanceof ImageWidget && other.src === this.src;
+    return (
+      other instanceof ImageWidget &&
+      other.src === this.src &&
+      sameTablePresentation(other.table, this.table)
+    );
   }
 
   toDOM(): HTMLElement {
     const container = document.createElement('span');
     container.className = 'cm-lv-widget cm-lv-image';
+    applyTablePresentation(container, this.table);
 
     const image = document.createElement('img');
     image.decoding = 'async';
@@ -122,6 +145,39 @@ export class ImageWidget extends WidgetType {
   ignoreEvent(): boolean {
     return true;
   }
+}
+
+
+function tablePresentation(token: WidgetContext['token']): TablePresentation | null {
+  const meta = token.meta;
+  if (!meta?.tableClass || !meta.tableStyle) return null;
+  return {
+    className: meta.tableClass,
+    style: meta.tableStyle,
+    column: meta.tableColumn ?? '0',
+    colspan: meta.tableColspan ?? '1',
+    rowspan: meta.tableRowspan ?? '1'
+  };
+}
+
+function sameTablePresentation(a: TablePresentation | null, b: TablePresentation | null): boolean {
+  return a === b || Boolean(
+    a && b &&
+    a.className === b.className &&
+    a.style === b.style &&
+    a.column === b.column &&
+    a.colspan === b.colspan &&
+    a.rowspan === b.rowspan
+  );
+}
+
+function applyTablePresentation(element: HTMLElement, table: TablePresentation | null): void {
+  if (!table) return;
+  element.classList.add(...table.className.split(/\s+/).filter(Boolean));
+  element.setAttribute('style', table.style);
+  element.dataset.lvColumn = table.column;
+  element.dataset.lvColspan = table.colspan;
+  element.dataset.lvRowspan = table.rowspan;
 }
 
 function keepsFocus(event: FocusEvent, container: HTMLElement): boolean {

@@ -295,23 +295,46 @@ function layoutTable(
         position.cell === row.length - 1 ? 'cm-lv-cell-last' : '',
         offset > 0 ? 'cm-lv-cell-gap' : ''
       ].filter(Boolean).join(' ');
-      decorations.push(
-        Decoration.mark({
-          class: classes,
-          attributes: {
-            style: `--lv-cell-width:${Math.min(42, Math.max(minWidth, width))}ch;--lv-cell-offset:${offset}ch`,
-            'data-lv-column': String(position.column),
-            'data-lv-colspan': String(span),
-            'data-lv-rowspan': String(Math.max(1, cell.rowspan ?? 1))
-          }
-        }).range(visual.from, visual.to)
-      );
+      const attributes = {
+        style: `--lv-cell-width:${Math.min(42, Math.max(minWidth, width))}ch;--lv-cell-offset:${offset}ch`,
+        'data-lv-column': String(position.column),
+        'data-lv-colspan': String(span),
+        'data-lv-rowspan': String(Math.max(1, cell.rowspan ?? 1))
+      };
+      const replacement = exactReplacementToken(language, token.children, content);
+
+      if (replacement) {
+        replacement.meta = {
+          ...replacement.meta,
+          tableClass: classes,
+          tableStyle: attributes.style,
+          tableColumn: attributes['data-lv-column'],
+          tableColspan: attributes['data-lv-colspan'],
+          tableRowspan: attributes['data-lv-rowspan']
+        };
+      } else {
+        decorations.push(Decoration.mark({ class: classes, attributes }).range(visual.from, visual.to));
+      }
     }
 
     previous = Math.max(previous, cell.to);
   }
 
   hide(previous, token.body.to);
+}
+
+
+function exactReplacementToken(language: Language, tokens: Token[] | undefined, range: Range): Token | null {
+  if (!tokens) return null;
+
+  for (const token of tokens) {
+    if (token.to < range.from || token.from > range.to) continue;
+    if (token.from === range.from && token.to === range.to && language.style(token)?.widget) return token;
+    const child = exactReplacementToken(language, token.children, range);
+    if (child) return child;
+  }
+
+  return null;
 }
 
 function tableMinColumnWidth(source: string, token: Token, columns: number): number {
