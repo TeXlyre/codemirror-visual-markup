@@ -27,9 +27,9 @@ function load(): Promise<void> {
 // MathLive exports Typst but imports ASCIIMath, whose common names differ slightly.
 function typstInput(value: string): string {
   return value
-    .replace(/\binfinity\b/g, 'oo')
-    .replace(/\bintegral\b/g, 'int')
-    .replace(/\bproduct\b/g, 'prod')
+    .replace(/\binfinity(?![A-Za-z0-9])/g, 'oo')
+    .replace(/\bintegral(?![A-Za-z0-9])/g, 'int')
+    .replace(/\bproduct(?![A-Za-z0-9])/g, 'prod')
     .replace(/\bdif\s+([A-Za-z])\b/g, 'd$1');
 }
 
