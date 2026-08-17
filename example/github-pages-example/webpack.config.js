@@ -1,11 +1,14 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+const single = name => path.resolve(__dirname, 'node_modules', name);
+
 module.exports = {
   entry: './src/index.js',
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    publicPath: 'auto',
     clean: true
   },
   devServer: {
@@ -17,29 +20,25 @@ module.exports = {
     rules: [
       {
         test: /\.css$/i,
-        use: ['style-loader', 'css-loader'],
-      },
-    ],
+        use: ['style-loader', 'css-loader']
+      }
+    ]
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html'
     })
   ],
+  performance: {
+    hints: false
+  },
   resolve: {
-    modules: [
-      'node_modules',
-      path.resolve(__dirname, '../../node_modules'),
-      path.resolve(__dirname, '../..')
-    ],
     alias: {
-      '@codemirror/state': path.resolve(__dirname, '../../node_modules/@codemirror/state'),
-      '@codemirror/view': path.resolve(__dirname, '../../node_modules/@codemirror/view'),
-      '@codemirror/language': path.resolve(__dirname, '../../node_modules/@codemirror/language'),
-      'prosemirror-state': path.resolve(__dirname, '../../node_modules/prosemirror-state'),
-      'prosemirror-view': path.resolve(__dirname, '../../node_modules/prosemirror-view'),
-      'prosemirror-model': path.resolve(__dirname, '../../node_modules/prosemirror-model'),
-      'prosemirror-inputrules': path.resolve(__dirname, '../../node_modules/prosemirror-inputrules'),
+      '@codemirror/state': single('@codemirror/state'),
+      '@codemirror/view': single('@codemirror/view'),
+      '@codemirror/language': single('@codemirror/language'),
+      '@codemirror/commands': single('@codemirror/commands'),
+      mathlive: single('mathlive')
     }
   }
 };

@@ -8,18 +8,27 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "style": "dist/styles.css",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TeXlyre/codemirror-visual-markup.git"
+  },
   "scripts": {
     "build": "tsc --noEmit && rollup -c && cp src/styles.css dist/",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "prepare": "npm run build",
     "build:pages-example": "cd example/github-pages-example && npm install",
-    "pages-example": "cd example/github-pages-example && npm start",
-    "test:coverage": "jest --coverage"
+    "pages-example": "cd example/github-pages-example && npm start"
   },
   "peerDependencies": {
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "mathlive": "^0.98.0"
+    "mathlive": ">=0.98.0"
+  },
+  "peerDependenciesMeta": {
+    "mathlive": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@codemirror/state": "^6.0.0",
@@ -48,10 +57,5 @@
     "visual-editor",
     "wysiwym",
     "mathlive"
-  ],
-  "peerDependenciesMeta": {
-    "mathlive": {
-      "optional": true
-    }
-  }
+  ]
 }
