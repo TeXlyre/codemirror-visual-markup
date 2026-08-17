@@ -106,9 +106,11 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
           language: options.language
         });
         const spansLines = state.doc.lineAt(token.from).number !== state.doc.lineAt(token.to).number;
+        const tableInline = token.meta?.tableInline === 'true';
+        const block = Boolean(style.block && !tableInline);
 
-        if (widget && (style.block || !spansLines)) {
-          const decoration = Decoration.replace({ widget, block: style.block });
+        if (widget && (block || !spansLines)) {
+          const decoration = Decoration.replace({ widget, block });
           decorations.push(decoration.range(token.from, token.to));
           atomic.push(decoration.range(token.from, token.to));
           replaced.push({ from: token.from, to: token.to });
@@ -238,9 +240,12 @@ function layoutTable(
       const position = positions.get(cell);
       if (!position) return;
       const span = Math.max(1, cell.colspan ?? 1);
-      const width = Math.max(minWidth, Math.ceil(measureCell(source, cell) / span));
+      const width = Math.max(minWidth, Math.ceil((measureCell(source, cell) + TABLE_CELL_CHROME) / span));
       for (let offset = 0; offset < span; offset++) {
-        widths[position.column + offset] = Math.max(widths[position.column + offset] ?? minWidth, width);
+        widths[position.column + offset] = Math.min(
+          TABLE_MAX_COLUMN_WIDTH,
+          Math.max(widths[position.column + offset] ?? minWidth, width)
+        );
       }
     });
   });
@@ -272,6 +277,9 @@ function layoutTable(
     if (cell.from > previous) hide(previous, cell.from);
 
     const content = trim(source, cell);
+    if (content.from > cell.from) hide(cell.from, content.from);
+    if (content.to < cell.to) hide(content.to, cell.to);
+
     const visual = {
       from: cell.visualFrom ?? content.from,
       to: cell.visualTo ?? content.to
@@ -296,11 +304,12 @@ function layoutTable(
         offset > 0 ? 'cm-lv-cell-gap' : ''
       ].filter(Boolean).join(' ');
       const attributes = {
-        style: `--lv-cell-width:${Math.min(42, Math.max(minWidth, width))}ch;--lv-cell-offset:${offset}ch`,
+        style: `--lv-cell-width:${Math.max(minWidth, width)}ch;--lv-cell-offset:${offset}ch`,
         'data-lv-column': String(position.column),
         'data-lv-colspan': String(span),
         'data-lv-rowspan': String(Math.max(1, cell.rowspan ?? 1))
       };
+      markTableWidgets(language, token.children, content);
       const replacement = exactReplacementToken(language, token.children, content);
 
       if (replacement) {
@@ -323,6 +332,22 @@ function layoutTable(
   hide(previous, token.body.to);
 }
 
+
+// Reserve room for the cell's horizontal padding/borders in the monospace editor grid.
+const TABLE_CELL_CHROME = 3;
+const TABLE_MAX_COLUMN_WIDTH = 42;
+
+function markTableWidgets(language: Language, tokens: Token[] | undefined, range: Range): void {
+  if (!tokens) return;
+
+  for (const token of tokens) {
+    if (token.to <= range.from || token.from >= range.to) continue;
+    if (token.from >= range.from && token.to <= range.to && language.style(token)?.widget) {
+      token.meta = { ...token.meta, tableInline: 'true' };
+    }
+    markTableWidgets(language, token.children, range);
+  }
+}
 
 function exactReplacementToken(language: Language, tokens: Token[] | undefined, range: Range): Token | null {
   if (!tokens) return null;

@@ -51,10 +51,25 @@ describe('table content nesting', () => {
     expect(view.contentDOM.textContent).toContain('bold');
   });
 
-  it('renders display math inside a cell', () => {
+  it('renders display math inside a cell without turning it into a block row', () => {
     const doc = ['intro', '', '\\begin{tabular}{ll}', '  a & $$x^2$$ \\\\', '\\end{tabular}'].join('\n');
-    const view = mount(doc);
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const result = buildDecorations(state, { language: latex, showCommands: false });
+    const display = flatten(result.tokens).find(token => token.kind === 'math' && token.display)!;
+    const cursor = result.decorations.iter();
+    let block: boolean | undefined;
 
+    while (cursor.value) {
+      const spec = cursor.value.spec as { block?: boolean; widget?: unknown };
+      if (cursor.from === display.from && cursor.to === display.to && spec.widget) block = spec.block;
+      cursor.next();
+    }
+
+    expect(display.meta?.tableInline).toBe('true');
+    expect(display.meta?.tableStyle).toContain('--lv-cell-width:6ch');
+    expect(block).toBe(false);
+
+    const view = mount(doc);
     expect(view.contentDOM.querySelectorAll('.cm-lv-math')).toHaveLength(1);
   });
 
@@ -92,8 +107,8 @@ describe('table content nesting', () => {
 
     expect(byColumn.size).toBe(2);
     expect([...byColumn.values()].every(widths => widths.size === 1)).toBe(true);
-    expect([...byColumn.get(0)!].every(value => value.includes('--lv-cell-width:6ch'))).toBe(true);
-    expect([...byColumn.get(1)!].every(value => value.includes('--lv-cell-width:6ch'))).toBe(true);
+    expect([...byColumn.get(0)!].every(value => value.includes('--lv-cell-width:9ch'))).toBe(true);
+    expect([...byColumn.get(1)!].every(value => value.includes('--lv-cell-width:8ch'))).toBe(true);
   });
 });
 
@@ -281,6 +296,11 @@ describe('Typst tables and grids', () => {
       ['Alpha', '$ beta $']
     ]);
     expect(typst.table!.editable!(doc, token)).toBe(true);
+
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const result = buildDecorations(state, { language: typst, showCommands: false });
+    const display = flatten(result.tokens).find(item => item.kind === 'math' && item.display)!;
+    expect(display.meta?.tableInline).toBe('true');
 
     const view = mount(doc, 0, 'typst');
     expect(view.contentDOM.querySelectorAll('.cm-lv-cell')).toHaveLength(4);

@@ -229,6 +229,8 @@
 }
 
 .cm-lv-table-row {
+  display: flex;
+  align-items: stretch;
   width: max-content;
   min-width: max-content;
   min-height: 2.3em;
@@ -293,9 +295,18 @@
 }
 
 .cm-lv-table-row .cm-lv-math-display {
-  width: 100%;
-  padding: 0.15em 0;
+  display: inline-flex;
+  width: auto;
+  padding: 0;
   margin: 0;
+  vertical-align: middle;
+}
+
+.cm-lv-table-row .cm-lv-cell.cm-lv-math-display {
+  width: var(--lv-cell-width, 8ch);
+  min-height: 2.3em;
+  padding: 0.4em 0.7em;
+  justify-content: center;
 }
 
 .cm-lv-table-row .cm-lv-image {
