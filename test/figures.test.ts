@@ -47,7 +47,7 @@ describe('figure layouts', () => {
     expect(figure).not.toBeNull();
     expect(panels(view)).toHaveLength(2);
     expect(images(view)).toHaveLength(2);
-    expect([...view.contentDOM.querySelectorAll('.cm-lv-subcaption')].map(node => node.textContent)).toEqual(['Alpha', 'Beta']);
+    expect(Array.from(view.contentDOM.querySelectorAll('.cm-lv-subcaption'), node => node.textContent)).toEqual(['Alpha', 'Beta']);
     expect(view.contentDOM.querySelector('.cm-lv-figure-caption')?.textContent).toBe('Both panels');
     expect(figure.style.getPropertyValue('--lv-figure-columns')).toBe('2');
 
@@ -69,7 +69,7 @@ describe('figure layouts', () => {
     const figure = view.contentDOM.querySelector('.cm-lv-figure-preview')!;
 
     expect(figure.classList.contains('cm-lv-figure-wide')).toBe(true);
-    expect([...view.contentDOM.querySelectorAll('.cm-lv-subcaption')].map(node => node.textContent)).toEqual(['One', 'Two']);
+    expect(Array.from(view.contentDOM.querySelectorAll('.cm-lv-subcaption'), node => node.textContent)).toEqual(['One', 'Two']);
   });
 
   it('renders side-caption LaTeX figures without changing their source', () => {
@@ -118,7 +118,7 @@ describe('Typst figure layouts', () => {
 
     expect(panels(view)).toHaveLength(2);
     expect(images(view)).toHaveLength(2);
-    expect([...view.contentDOM.querySelectorAll('.cm-lv-subcaption')].map(node => node.textContent)).toEqual(['Alpha', 'Beta']);
+    expect(Array.from(view.contentDOM.querySelectorAll('.cm-lv-subcaption'), node => node.textContent)).toEqual(['Alpha', 'Beta']);
     expect(figure.style.getPropertyValue('--lv-figure-columns')).toBe('2');
   });
 
@@ -160,7 +160,7 @@ describe('Typst figure layouts', () => {
   it('supports parent-scoped wide figures and top captions', () => {
     const doc = 'intro\n\n#figure(image("https://example.com/a.png"), scope: "parent", caption: figure.caption(position: top, [Above]))';
     const view = mount(doc, 'typst');
-    const line = [...view.contentDOM.querySelectorAll('.cm-line')].find(node => node.classList.contains('cm-lv-figure-simple'))!;
+    const line = Array.from(view.contentDOM.querySelectorAll('.cm-line')).find(node => node.classList.contains('cm-lv-figure-simple'))!;
 
     expect(line.classList.contains('cm-lv-figure-wide')).toBe(true);
     expect(line.classList.contains('cm-lv-figure-caption-top')).toBe(true);
