@@ -1,12 +1,8 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { autocompletion } from '@codemirror/autocomplete';
 import { lintGutter, linter } from '@codemirror/lint';
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
-
-import { latex as latexSupport, latexCompletionSource, latexLinter } from 'codemirror-lang-latex';
-import { typst as typstSupport, typstCompletionSource } from 'codemirror-lang-typst';
 
 import { DualVisualEditor, createImageResolver, imageResolver, listLanguages } from '../../..';
 
@@ -72,16 +68,14 @@ $ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $
 };
 
 const LANGUAGE_SUPPORT = {
-  latex: () => [
-    latexSupport(),
-    autocompletion({ override: [latexCompletionSource] }),
-    linter(latexLinter()),
-    lintGutter()
-  ],
-  typst: () => [
-    typstSupport(),
-    autocompletion({ override: [typstCompletionSource] })
-  ]
+  latex: async () => {
+    const { latex, latexLinter } = await import('codemirror-lang-latex');
+    return [latex({ autoCloseTags: true }), linter(latexLinter()), lintGutter()];
+  },
+  typst: async () => {
+    const { typst } = await import('codemirror-lang-typst');
+    return [typst()];
+  }
 };
 
 const resolver = createImageResolver(
@@ -90,10 +84,19 @@ const resolver = createImageResolver(
 );
 
 let editor;
+let generation = 0;
 
-function mount(language) {
+async function mount(language) {
+  const token = ++generation;
   const host = document.getElementById('editor');
+
   host.innerHTML = '';
+  host.textContent = `Loading ${language} support...`;
+
+  const support = await LANGUAGE_SUPPORT[language]();
+  if (token !== generation) return;
+
+  host.textContent = '';
 
   const view = new EditorView({
     state: EditorState.create({
@@ -103,7 +106,7 @@ function mount(language) {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        LANGUAGE_SUPPORT[language](),
+        support,
         imageResolver.of(resolver)
       ]
     })
@@ -130,20 +133,27 @@ function setupControls() {
   }
 
   picker.addEventListener('change', () => {
-    editor.destroy();
+    editor?.destroy();
+    editor = undefined;
     mount(picker.value);
   });
 
   document.getElementById('theme').addEventListener('click', () => {
     const dark = document.body.classList.toggle('theme-dark');
-    editor.setTheme(dark ? 'dark' : 'light');
+    editor?.setTheme(dark ? 'dark' : 'light');
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function start() {
   if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
     document.body.classList.add('theme-dark');
   }
   setupControls();
   mount('latex');
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', start);
+} else {
+  start();
+}
