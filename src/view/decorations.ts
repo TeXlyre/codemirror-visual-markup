@@ -114,7 +114,7 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
         // uses one physical line per cell. An inline table widget may therefore
         // legitimately replace line breaks (for example multiline display math).
         if (widget && (block || !spansLines || tableInline)) {
-          const decoration = Decoration.replace({ widget, block });
+          const decoration = Decoration.replace({ widget, block, tableLayout: tableInline || undefined });
           decorations.push(decoration.range(token.from, token.to));
           atomic.push(decoration.range(token.from, token.to));
           replaced.push({ from: token.from, to: token.to });
@@ -356,7 +356,7 @@ function layoutTable(
 }
 
 
-const tableLineJoin = Decoration.replace({});
+const tableLineJoin = Decoration.replace({ tableLayout: true });
 
 function joinTableRowLines(
   source: string,
@@ -371,13 +371,15 @@ function joinTableRowLines(
   const joinRanges: Range[] = [];
   const inRow = new Set(row);
 
-  // Whitespace used only to format a source cell over several physical lines
-  // should not create extra visual rows.
-  for (const cell of row) {
+  // Join line breaks that are genuinely inside a logical row. The first
+  // cell often starts at the newline immediately after the previous row's
+  // `\\`; that boundary must remain visible or two logical rows collapse
+  // into one CodeMirror line.
+  row.forEach((cell, index) => {
     const content = trim(source, cell);
-    if (cell.from < content.from) joinRanges.push({ from: cell.from, to: content.from });
-    if (content.to < cell.to) joinRanges.push({ from: content.to, to: cell.to });
-  }
+    const from = index === 0 ? content.from : cell.from;
+    if (from < cell.to) joinRanges.push({ from, to: cell.to });
+  });
 
   // Typst cell ranges are trimmed, so their formatting newline usually lives
   // between adjacent arguments rather than inside a cell range. Join that gap

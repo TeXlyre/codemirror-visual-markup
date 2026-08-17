@@ -119,7 +119,7 @@ describe.each([
     }
   });
 
-  it('never hides a line break outside a block replacement', () => {
+  it('only hides line breaks for block or explicit table-layout replacements', () => {
     const random = mulberry(4242);
 
     for (let iteration = 0; iteration < 200; iteration++) {
@@ -133,8 +133,9 @@ describe.each([
       const cursor = decorations.iter();
 
       while (cursor.value) {
-        const spec = cursor.value.spec as { class?: string; block?: boolean };
-        const isInlineReplace = spec.class === undefined && spec.block !== true;
+        const spec = cursor.value.spec as { class?: string; block?: boolean; tableLayout?: boolean };
+        const isInlineReplace =
+          spec.class === undefined && spec.block !== true && spec.tableLayout !== true;
 
         if (isInlineReplace && cursor.to > cursor.from) {
           expect(source.slice(cursor.from, cursor.to)).not.toContain('\n');
