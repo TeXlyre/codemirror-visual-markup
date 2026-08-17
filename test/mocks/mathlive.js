@@ -26,4 +26,6 @@ if (!customElements.get('math-field')) {
   customElements.define('math-field', MathfieldElement);
 }
 
-module.exports = { MathfieldElement, __esModule: true };
+const convertAsciiMathToLatex = value => `latex(${value})`;
+
+module.exports = { MathfieldElement, convertAsciiMathToLatex, __esModule: true };
