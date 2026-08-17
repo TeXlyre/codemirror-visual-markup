@@ -4,12 +4,39 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { lintGutter } from '@codemirror/lint';
 import { defaultHighlightStyle, foldGutter, syntaxHighlighting } from '@codemirror/language';
 
-import { DualVisualEditor, listLanguages } from '../../..';
+import { DualVisualEditor, createImageResolver, imageResolver, listLanguages } from '../../..';
 
 import '../../../dist/styles.css';
 import './styles.css';
 
 const IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/120px-React-icon.svg.png';
+
+const mweImage = label => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="${label}">
+    <rect width="320" height="200" fill="#f4f4f4"/>
+    <path d="M0 0 320 200M320 0 0 200" stroke="#c8c8c8" stroke-width="2"/>
+    <rect x="1" y="1" width="318" height="198" fill="none" stroke="#999" stroke-width="2"/>
+    <text x="160" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="42" fill="#555">${label}</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
+const MWE_IMAGES = new Map([
+  ['example-image', mweImage('IMAGE')],
+  ['example-image-a', mweImage('A')],
+  ['example-image-b', mweImage('B')],
+  ['example-image-c', mweImage('C')]
+]);
+
+function mweImageFor(src) {
+  const name = src.split('/').pop()?.replace(/\.(?:pdf|eps|png|jpe?g|svg)$/i, '') ?? '';
+  return MWE_IMAGES.get(name) ?? null;
+}
+
+const resolver = createImageResolver(
+  () => '/main.tex',
+  async (resolvedPath, src) => mweImageFor(src) ?? resolvedPath
+);
 
 const SAMPLES = {
   latex: `\\section{Introduction}
@@ -115,7 +142,8 @@ async function mount(language) {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        support
+        support,
+        imageResolver.of(resolver)
       ]
     })
   });
