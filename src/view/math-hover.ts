@@ -23,7 +23,7 @@ function findMath(state: EditorState, pos: number, language: string): Token | nu
   return token && token.kind === 'math' ? token : null;
 }
 
-function renderTooltip(state: EditorState, token: Token): Tooltip {
+function renderTooltip(state: EditorState, token: Token, language: string): Tooltip {
   const content = state.doc.sliceString(token.body?.from ?? token.from, token.body?.to ?? token.to);
 
   return {
@@ -33,7 +33,8 @@ function renderTooltip(state: EditorState, token: Token): Tooltip {
     create: () => {
       const dom = document.createElement('div');
       dom.className = 'cm-lv-math-tooltip';
-      dom.appendChild(createEditableMath(content.trim(), Boolean(token.display)));
+      const syntax = language === 'typst' ? 'typst' : 'latex';
+      dom.appendChild(createEditableMath(content.trim(), Boolean(token.display), syntax));
       return { dom };
     }
   };
@@ -45,7 +46,7 @@ export function mathHover(language = 'latex'): Extension {
     hoverTooltip((view, pos) => {
       if (!view.state.field(enabledField)) return null;
       const token = findMath(view.state, pos, language);
-      return token ? renderTooltip(view.state, token) : null;
+      return token ? renderTooltip(view.state, token, language) : null;
     })
   ];
 }

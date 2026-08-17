@@ -6,7 +6,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   moduleNameMapper: {
     '\\.(css|less|scss)$': '<rootDir>/test/mocks/style.js',
-    '^mathlive$': '<rootDir>/test/mocks/mathlive.js'
+    '^mathlive$': '<rootDir>/test/mocks/mathlive.js',
+    '^tex2typst$': '<rootDir>/test/mocks/tex2typst.js'
   },
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }]

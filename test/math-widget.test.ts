@@ -20,8 +20,6 @@ const mount = (doc: string, language = 'latex') => {
 const container = (view: EditorView) => view.contentDOM.querySelector('.cm-lv-math') as HTMLElement;
 type TestMathfield = HTMLElement & {
   value: string;
-  lastSetValue?: string;
-  lastSetValueFormat?: string;
   lastGetValueFormat?: string;
 };
 
@@ -89,20 +87,22 @@ describe('math widget editing', () => {
     expect(view.state.doc.toString()).toBe('text $z$ more');
   });
 
-  it('parses Typst math for MathLive and commits Typst output', () => {
+  it('converts Typst math to LaTeX for MathLive and commits Typst output', () => {
     const view = mount('before\n$ integral_(-oo)^oo e^(-x^2) dif x = sqrt(pi) $\nafter', 'typst');
     const mathfield = field(view);
 
-    expect(mathfield.lastSetValueFormat).toBeUndefined();
-    expect(mathfield.lastSetValue).toBe('latex(int_(-oo)^oo e^(-x^2) dx = sqrt(pi))');
+    expect(mathfield.value).toBe('\\int_{-\\infty}^{\\infty} e^{-x^2} \\mathrm{d} x = \\sqrt{\\pi}');
 
     mathfield.value = 'integral_0^1 x dif x';
     container(view).dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(mathfield.lastGetValueFormat).toBe('typst');
     expect(view.state.doc.toString()).toBe('before\n$ integral_0^1 x dif x $\nafter');
+  });
 
-    const roundTrip = mount('before\n$ integral_(-infinity)^infinity e^(-x^2) dif x = sqrt(pi) $\nafter', 'typst');
-    expect(field(roundTrip).lastSetValue).toBe('latex(int_(-oo)^oo e^(-x^2) dx = sqrt(pi))');
+  it('converts Typst named symbols before passing them to MathLive', () => {
+    const view = mount('before $alpha + beta$ after', 'typst');
+
+    expect(field(view).value).toBe('\\alpha + \\beta');
   });
 });

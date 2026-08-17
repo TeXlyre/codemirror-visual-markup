@@ -3,15 +3,7 @@ class MathfieldElement extends HTMLElement {
     super();
     this.value = '';
     this.readOnly = false;
-    this.lastSetValue = undefined;
-    this.lastSetValueFormat = undefined;
     this.lastGetValueFormat = undefined;
-  }
-
-  setValue(value, options = {}) {
-    this.value = value;
-    this.lastSetValue = value;
-    this.lastSetValueFormat = options.format;
   }
 
   getValue(format) {
@@ -22,10 +14,6 @@ class MathfieldElement extends HTMLElement {
 
 MathfieldElement.soundsDirectory = null;
 
-if (!customElements.get('math-field')) {
-  customElements.define('math-field', MathfieldElement);
-}
+if (!customElements.get('math-field')) customElements.define('math-field', MathfieldElement);
 
-const convertAsciiMathToLatex = value => `latex(${value})`;
-
-module.exports = { MathfieldElement, convertAsciiMathToLatex, __esModule: true };
+module.exports = { MathfieldElement, __esModule: true };

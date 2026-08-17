@@ -11,6 +11,7 @@ export default [
     },
     external: [
       'mathlive',
+      'tex2typst',
       '@codemirror/state',
       '@codemirror/view',
       '@codemirror/language',

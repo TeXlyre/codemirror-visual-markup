@@ -20,6 +20,9 @@
     "build:pages-example": "cd example/github-pages-example && npm install",
     "pages-example": "cd example/github-pages-example && npm start"
   },
+  "dependencies": {
+    "tex2typst": "^0.6.2"
+  },
   "peerDependencies": {
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",

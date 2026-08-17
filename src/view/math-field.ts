@@ -1,14 +1,14 @@
+import { typst2tex } from 'tex2typst';
+
 export type MathSyntax = 'latex' | 'typst';
 
 type Mathfield = HTMLElement & {
   value: string;
   readOnly: boolean;
-  setValue?(value: string): void;
   getValue?(format?: string): string;
 };
 
 let constructor: (new () => Mathfield) | null = null;
-let asciiToLatex: ((value: string) => string) | null = null;
 let pending: Promise<void> | null = null;
 
 function load(): Promise<void> {
@@ -19,33 +19,16 @@ function load(): Promise<void> {
         if (!element) return;
         (element as unknown as { soundsDirectory: string | null }).soundsDirectory = null;
         constructor = element;
-        asciiToLatex = module?.convertAsciiMathToLatex ?? null;
       })
       .catch(() => undefined);
   }
   return pending;
 }
 
-// MathLive exports Typst but mathfields import LaTeX. Normalize the small
-// syntax differences before converting the Typst expression through ASCIIMath.
-function typstInput(value: string): string {
-  return value
-    .replace(/\binfinity(?![A-Za-z0-9])/g, 'oo')
-    .replace(/\bintegral(?![A-Za-z0-9])/g, 'int')
-    .replace(/\bproduct(?![A-Za-z0-9])/g, 'prod')
-    .replace(/\bdif\s+([A-Za-z])\b/g, 'd$1');
-}
-
 function configure(field: Mathfield, value: string, displayMode: boolean, syntax: MathSyntax): void {
   const options = field as unknown as Record<string, unknown>;
+  field.value = syntax === 'typst' ? typst2tex(value, { blockMathMode: displayMode }) : value;
 
-  if (syntax === 'typst' && asciiToLatex) {
-    const latex = asciiToLatex(typstInput(value));
-    if (field.setValue) field.setValue(latex);
-    else field.value = latex;
-  } else {
-    field.value = value;
-  }
   field.readOnly = false;
   options.mathVirtualKeyboardPolicy = 'auto';
   options.smartMode = true;
