@@ -1,88 +1,66 @@
-// src/index.ts
+import './languages/latex';
+import './languages/typst';
 
-// Core services - new exports
-export { ConfigService, DEFAULT_CONFIG } from './core/config';
-export { EventService } from './core/event-service';
-export { FocusService } from './core/focus-service';
-export { DOMUtils } from './core/dom-utils';
-export { WidgetRegistry } from './core/widget-registry';
-export { errorService, ErrorSeverity, ErrorCategory } from './core/error-service';
+export { latex, setMacroSignatures } from './languages/latex';
+export { typst } from './languages/typst';
 
-// Main editor components
-export { DualLatexEditor, latexVisualKeymap } from './dual-editor';
-export { VisualCodeMirrorEditor } from './visual-codemirror/visual-editor';
-export { OverlayManager } from './visual-codemirror/overlay-manager';
-export { WidgetFactory } from './visual-codemirror/widget-factory';
-export { NestedContentRenderer } from './visual-codemirror/nested-content-renderer';
-export { Toolbar } from './toolbar';
-
-// Math hover widget
-export { MathHoverManager, createMathHoverExtension } from './visual-codemirror/widgets/math-hover-widget';
-
-// Parser exports
-export * from './parsers/base-parser';
-export { LatexTokenizer } from './parsers/main-parser';
-export { CommentParser } from './parsers/comment-parser';
-export { MathParser } from './parsers/math-parser';
-export { SectionParser } from './parsers/section-parser';
-export { EnvironmentParser } from './parsers/environment-parser';
-export { CommandParser, EDITABLE_COMMANDS, FORMATTING_COMMANDS } from './parsers/command-parser';
-export { TableParser } from './parsers/table-parser';
-
-// Widget exports
-export * from './visual-codemirror/widgets/base-widget';
-export { SectionWidget } from './visual-codemirror/widgets/section-widget';
-export { MathWidget } from './visual-codemirror/widgets/math-widget';
-export { EnvironmentWidget } from './visual-codemirror/widgets/environment-widget';
-export { CommandWidget } from './visual-codemirror/widgets/command-widget';
-export { TableWidget } from './visual-codemirror/widgets/table-widget';
-export { ListWidget } from './visual-codemirror/widgets/list-widget';
-
-// Component exports
-export { TableSelector, TableDimensions } from './components/table-selector';
-
-// Utility exports
-export { createEditableMath } from './math-field-utils';
-
-// Type exports for better TypeScript support
-export type {
-  LatexEditorConfig
+export {
+  ConfigService,
+  DEFAULT_CONFIG,
+  DARK_THEME_COLORS,
+  LIGHT_THEME_COLORS
 } from './core/config';
+export type { EditorConfig, LatexEditorConfig, ThemeColors } from './core/config';
 
-export type {
-  LatexError,
-  ErrorRecoveryStrategy
-} from './core/error-service';
+export { getLanguage, listLanguages, registerLanguage } from './core/language';
+export type { Language, LanguageCommands, Rule, RuleContext, TableAdapter, TokenStyle, WidgetKind } from './core/language';
 
-export type {
-  WidgetInstance,
-  WidgetUpdateData
-} from './core/widget-registry';
+export {
+  createColorItem,
+  createHeadingItem,
+  createListItem,
+  createTableItem,
+  createWrapItem,
+  insertBlock,
+  insertText,
+  isToolbarButton,
+  space,
+  split,
+  tableScopeEntries,
+  toolbarEntries,
+  wrapSelection
+} from './core/toolbar';
+export type { ToolbarEntry, ToolbarItem, ToolbarSpace, ToolbarSplit } from './core/toolbar';
 
-export type {
-  FocusableElement,
-  FocusState
-} from './core/focus-service';
+export { EMPTY_SCOPE, scopeAt } from './core/scope';
+export type { EditorScope } from './core/scope';
 
-export type {
-  StyleOptions,
-  EditableElementOptions
-} from './core/dom-utils';
+export { Tokenizer } from './core/tokenizer';
+export type { TokenizeOptions } from './core/tokenizer';
+export { textOf, tokenAt, walk } from './core/tokens';
+export type { Range, Token, TokenKind } from './core/tokens';
 
-export type {
-  WidgetUpdateEvent,
-  ModeChangeEvent,
-  FocusChangeEvent
-} from './core/event-service';
+export { buildDecorations, revealAt, revealFrom, revealRanges } from './view/decorations';
+export type { RevealRange } from './view/decorations';
+export type { BuildOptions, BuildResult } from './view/decorations';
+export { createWidget, registerWidget, replaceRange } from './view/widget-registry';
+export type { WidgetContext, WidgetFactory } from './view/widget-registry';
+export { ImageWidget, MathWidget, TableWidget } from './view/widgets';
+export { createImageResolver, imageResolver, isExternal, resolveImagePath } from './view/images';
+export type { ImageFetcher, ImageResolver } from './view/images';
+export { createEditableMath, preloadMath } from './view/math-field';
+export { applyVariables, createTheme, cssVariables } from './view/theme';
 
-export type {
-  DualEditorOptions
-} from './dual-editor';
+export { setVisualState, visualExtension, VisualCodeMirrorEditor } from './view/visual-editor';
+export type { VisualEditorOptions } from './view/visual-editor';
 
-export type {
-  VisualEditorOptions
-} from './visual-codemirror/visual-editor';
+export { createMathHoverExtension, mathHover, MathHoverManager, setMathHoverEnabled } from './view/math-hover';
 
-export type {
-  ToolbarOptions
-} from './toolbar';
+export { DualLatexEditor, DualVisualEditor, latexVisualKeymap } from './ui/dual-editor';
+export type { DualEditorOptions } from './ui/dual-editor';
+
+export { Toolbar } from './ui/toolbar';
+export type { ToolbarOptions } from './ui/toolbar';
+
+export { TableSelector } from './ui/table-selector';
+export type { TableDimensions } from './ui/table-selector';

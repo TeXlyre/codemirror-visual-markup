@@ -6,7 +6,7 @@
     "declaration": true,
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,

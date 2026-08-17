@@ -1,7 +1,7 @@
 {
   "name": "codemirror-latex-visual",
-  "version": "0.1.0",
-  "description": "Visual LaTeX editing for CodeMirror 6",
+  "version": "0.2.0",
+  "description": "Visual editing for LaTeX and Typst in CodeMirror 6",
   "author": "Fares Abawi <fares@abawi.me>",
   "license": "MIT",
   "type": "module",
@@ -9,28 +9,32 @@
   "types": "dist/index.d.ts",
   "style": "dist/styles.css",
   "scripts": {
-    "build": "tsc && rollup -c && cp src/styles.css dist/",
+    "build": "tsc --noEmit && rollup -c && cp src/styles.css dist/",
+    "test": "jest",
     "prepare": "npm run build",
     "build:pages-example": "cd example/github-pages-example && npm install",
-    "pages-example": "cd example/github-pages-example && npm start"
+    "pages-example": "cd example/github-pages-example && npm start",
+    "test:coverage": "jest --coverage"
   },
   "peerDependencies": {
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "@codemirror/language": "^6.0.0",
     "mathlive": "^0.98.0"
   },
   "devDependencies": {
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "@codemirror/language": "^6.0.0",
-    "mathlive": "^0.107.0",
-    "katex": "^0.16.0",
     "@rollup/plugin-typescript": "^11.0.0",
-    "rollup-plugin-dts": "^6.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.19.43",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "mathlive": "^0.107.0",
     "rollup": "^3.0.0",
-    "typescript": "^5.0.0",
-    "tslib": "^2.6.0"
+    "rollup-plugin-dts": "^6.0.0",
+    "ts-jest": "^29.1.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.0.0"
   },
   "files": [
     "dist/",
@@ -40,9 +44,14 @@
   "keywords": [
     "codemirror",
     "latex",
-    "prosemirror",
+    "typst",
     "visual-editor",
-    "wysiwyg",
+    "wysiwym",
     "mathlive"
-  ]
+  ],
+  "peerDependenciesMeta": {
+    "mathlive": {
+      "optional": true
+    }
+  }
 }

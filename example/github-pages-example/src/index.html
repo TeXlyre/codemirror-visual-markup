@@ -3,116 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="CodeMirror 6 LaTeX Visual Editor with interactive editing capabilities">
-  <title>CodeMirror 6 LaTeX Visual Editor</title>
+  <title>CodeMirror Visual Markup Editor</title>
 </head>
 <body>
   <header>
-    <h1>CodeMirror LaTeX Visual Editor</h1>
-    <p>Transform LaTeX editing with visual overlays and interactive widgets</p>
-    <div class="links">
-      <a href="https://github.com/texlyre/codemirror-latex-visual" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <a href="https://www.npmjs.com/package/codemirror-latex-visual" target="_blank" rel="noopener noreferrer">npm</a>
-    </div>
+    <h1>CodeMirror Visual Markup Editor</h1>
+    <p>One visual editing layer, pluggable markup languages. The source document stays authoritative.</p>
   </header>
 
   <main>
-    <section class="demo-container">
-      <h2>Side-by-Side Comparison</h2>
-      <p>Compare raw LaTeX source with visual overlays. The visual editor transforms sections, math, environments, and commands into interactive widgets while maintaining the same underlying document.</p>
-      <div class="editors-grid">
-        <div class="editor-panel">
-          <h3>Source Mode</h3>
-          <div id="codemirror-editor"></div>
-        </div>
-        <div class="editor-panel">
-          <h3>Visual Mode</h3>
-          <div id="prosemirror-editor"></div>
-        </div>
-      </div>
+    <div class="controls">
+      <label for="language">Language</label>
+      <select id="language"></select>
+      <button id="theme" type="button">Toggle theme</button>
+      <span class="mode">Mode: <strong id="mode">visual</strong></span>
+    </div>
 
-      <div class="single-editor-demo">
-        <h2>Interactive Visual Editor</h2>
-        <p>Experience visual mode switching on a single editor. Toggle between source and visual editing with <kbd>Ctrl+E</kbd>. In visual mode, LaTeX elements become interactive widgets. Use <kbd>Ctrl+Shift+C</kbd> to toggle command visibility.</p>
-        
-        <div id="dual-editor"></div>
-      </div>
-    </section>
+    <div id="editor"></div>
 
-    <section class="features">
-      <h2>Visual Editor Features</h2>
-      <ul>
-        <li><strong>Visual Overlays:</strong> Sections, environments, tables, and commands rendered as interactive widgets</li>
-        <li><strong>Mode Toggle:</strong> Switch between source and visual editing without losing context</li>
-        <li><strong>Interactive Math:</strong> Click equations to edit with MathLive's interface</li>
-        <li><strong>Command Control:</strong> Show/hide LaTeX commands in visual mode for cleaner editing</li>
-        <li><strong>Single Document:</strong> Visual widgets are overlays on the same document - no synchronization needed</li>
-        <li><strong>Direct Editing:</strong> All changes update the source document immediately</li>
-        <li><strong>Performance Optimized:</strong> No document conversion overhead</li>
-        <li><strong>Math Hover (Source Mode):</strong> Preview math expressions on hover in source mode</li>
-      </ul>
-    </section>
-
-    <section class="usage">
-      <h2>Getting Started</h2>
-      <pre><code>import { EditorState, EditorView } from '@codemirror/state';
-import { DualLatexEditor, VisualCodeMirrorEditor } from 'codemirror-latex-visual';
-import 'codemirror-latex-visual/dist/styles.css';
-
-const cmEditor = new EditorView({
-  state: EditorState.create({
-    doc: '\\section{Title}\nSome text with $x^2$ inline math.',
-    extensions: [/* your extensions */]
-  }),
-  parent: document.getElementById('cm-container')
-});
-
-const dualEditor = new DualLatexEditor(
-  document.getElementById('editor-wrapper'),
-  cmEditor,
-  {
-    initialMode: 'visual',
-    showCommands: false,
-    showToolbar: true,
-    onModeChange: (mode) => {
-      console.log('Mode changed to:', mode);
-    }
-  }
-);</code></pre>
-    </section>
-
-    <section class="keyboard-shortcuts">
-      <h2>Keyboard Shortcuts</h2>
-      <div class="shortcuts-grid">
-        <div class="shortcut-group">
-          <h3>Editor Controls</h3>
-          <ul>
-            <li><kbd>Ctrl+E</kbd> - Toggle source/visual mode</li>
-            <li><kbd>Ctrl+Shift+C</kbd> - Toggle command visibility</li>
-            <li><kbd>Ctrl+Shift+T</kbd> - Toggle toolbar</li>
-            <li><kbd>Ctrl+Shift+D</kbd> - Toggle theme</li>
-          </ul>
-        </div>
-        <div class="shortcut-group">
-          <h3>Source Mode Features</h3>
-          <ul>
-            <li><kbd>Ctrl+Shift+M</kbd> - Toggle math hover</li>
-            <li><kbd>Escape</kbd> - Close math preview</li>
-            <li>Hover over $...$ or $$...$$ for preview</li>
-          </ul>
-        </div>
-      </div>
-    </section>
+    <ul class="hints">
+      <li><kbd>Ctrl</kbd>+<kbd>E</kbd> toggle source and visual mode</li>
+      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> reveal markup</li>
+      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> toggle the toolbar</li>
+      <li>Place the cursor inside a construct to reveal its markup inline</li>
+    </ul>
   </main>
-
-<footer>
-  <p>MIT License &copy; <span id="year"></span> <a href="https://abawi.me">Fares Abawi</a></p>
-</footer>
-
-<script>
-  document.getElementById('year').textContent = new Date().getFullYear();
-</script>
-
-
 </body>
 </html>

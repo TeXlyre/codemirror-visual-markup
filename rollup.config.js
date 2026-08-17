@@ -10,15 +10,10 @@ export default [
       sourcemap: true
     },
     external: [
+      'mathlive',
       '@codemirror/state',
       '@codemirror/view',
       '@codemirror/language',
-      'prosemirror-inputrules',
-      'prosemirror-state',
-      'prosemirror-view',
-      'prosemirror-model',
-      'prosemirror-keymap',
-      'prosemirror-commands'
     ],
     plugins: [typescript()]
   },

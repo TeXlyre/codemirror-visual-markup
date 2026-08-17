@@ -1,42 +1,34 @@
-// src/core/config.ts
-export interface LatexEditorConfig {
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  math: string;
+  environment: string;
+  command: string;
+  table: string;
+  background: string;
+  foreground: string;
+  surface: string;
+  border: string;
+}
+
+export interface EditorConfig {
+  language: string;
   showCommands: boolean;
   showToolbar: boolean;
-  maxRenderDepth: number;
-  maxParseDepth: number;
-  maxContentLength: number;
+  maxDepth: number;
   theme: 'light' | 'dark';
-  defaultTimeouts: {
-    blur: number;
-    focus: number;
-    update: number;
-    render: number;
-  };
   styles: {
-    colors: {
-      primary: string;
-      secondary: string;
-      success: string;
-      warning: string;
-      danger: string;
-      math: string;
-      environment: string;
-      command: string;
-      table: string;
-      background: string;
-      foreground: string;
-      surface: string;
-      border: string;
-    };
-    spacing: {
-      widget: string;
-      container: string;
-      cell: string;
-    };
+    colors: ThemeColors;
+    spacing: { widget: string; container: string; cell: string };
   };
 }
 
-export const DARK_THEME_COLORS = {
+export type LatexEditorConfig = EditorConfig;
+
+export const DARK_THEME_COLORS: ThemeColors = {
   primary: '#4da6ff',
   secondary: '#9ca3af',
   success: '#10b981',
@@ -52,7 +44,7 @@ export const DARK_THEME_COLORS = {
   border: '#4b5563'
 };
 
-export const LIGHT_THEME_COLORS = {
+export const LIGHT_THEME_COLORS: ThemeColors = {
   primary: '#007acc',
   secondary: '#6c757d',
   success: '#28a745',
@@ -65,81 +57,64 @@ export const LIGHT_THEME_COLORS = {
   background: '#ffffff',
   foreground: '#000000',
   surface: '#f8f9fa',
-  border: '#ddd'
+  border: '#dddddd'
 };
 
-export const DEFAULT_CONFIG: LatexEditorConfig = {
+export const DEFAULT_CONFIG: EditorConfig = {
+  language: 'latex',
   showCommands: false,
   showToolbar: true,
-  maxRenderDepth: 5,
-  maxParseDepth: 10,
-  maxContentLength: 1000,
+  maxDepth: 12,
   theme: 'light',
-  defaultTimeouts: {
-    blur: 150,
-    focus: 10,
-    update: 0,
-    render: 50
-  },
   styles: {
     colors: LIGHT_THEME_COLORS,
-    spacing: {
-      widget: '10px 0',
-      container: '8px 12px',
-      cell: '8px 12px'
-    }
+    spacing: { widget: '10px 0', container: '8px 12px', cell: '8px 12px' }
   }
 };
 
 export class ConfigService {
-  private config: LatexEditorConfig;
-  private listeners: Set<(config: LatexEditorConfig) => void> = new Set();
+  private config: EditorConfig;
+  private listeners = new Set<(config: EditorConfig) => void>();
 
-  constructor(initialConfig: Partial<LatexEditorConfig> = {}) {
-    this.config = this.mergeConfig(DEFAULT_CONFIG, initialConfig);
+  constructor(initial: Partial<EditorConfig> = {}) {
+    this.config = merge(DEFAULT_CONFIG, initial);
   }
 
-  get(): LatexEditorConfig {
-    return { ...this.config };
+  get(): EditorConfig {
+    return this.config;
   }
 
-  update(updates: Partial<LatexEditorConfig>): void {
-    this.config = this.mergeConfig(this.config, updates);
-    this.notifyListeners();
+  update(updates: Partial<EditorConfig>): void {
+    this.config = merge(this.config, updates);
+    this.listeners.forEach(listener => listener(this.config));
   }
 
   setTheme(theme: 'light' | 'dark'): void {
-    const colors = theme === 'dark' ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
-    this.config = this.mergeConfig(this.config, {
+    this.update({
       theme,
-      styles: {
-        ...this.config.styles,
-        colors
-      }
+      styles: { ...this.config.styles, colors: theme === 'dark' ? DARK_THEME_COLORS : LIGHT_THEME_COLORS }
     });
-    this.notifyListeners();
   }
 
-  subscribe(listener: (config: LatexEditorConfig) => void): () => void {
+  subscribe(listener: (config: EditorConfig) => void): () => void {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  private mergeConfig(base: LatexEditorConfig, updates: Partial<LatexEditorConfig>): LatexEditorConfig {
-    return {
-      ...base,
-      ...updates,
-      defaultTimeouts: { ...base.defaultTimeouts, ...updates.defaultTimeouts },
-      styles: {
-        ...base.styles,
-        ...updates.styles,
-        colors: { ...base.styles.colors, ...updates.styles?.colors },
-        spacing: { ...base.styles.spacing, ...updates.styles?.spacing }
-      }
+    return () => {
+      this.listeners.delete(listener);
     };
   }
+}
 
-  private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.config));
-  }
+function merge(base: EditorConfig, updates: Partial<EditorConfig>): EditorConfig {
+  const defined = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined)
+  ) as Partial<EditorConfig>;
+
+  return {
+    ...base,
+    ...defined,
+    styles: {
+      colors: { ...base.styles.colors, ...updates.styles?.colors },
+      spacing: { ...base.styles.spacing, ...updates.styles?.spacing }
+    }
+  };
 }

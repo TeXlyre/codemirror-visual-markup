@@ -1,1161 +1,255 @@
-/* Theme Variables */
-:root {
-  --latex-bg: #ffffff;
-  --latex-fg: #000000;
-  --latex-surface: #f8f9fa;
-  --latex-border: #ddd;
-  --latex-primary: #007acc;
-  --latex-secondary: #6c757d;
-  --latex-success: #28a745;
-  --latex-warning: #fd7e14;
-  --latex-danger: #dc3545;
-  --latex-math: #6f42c1;
-  --latex-environment: #28a745;
-  --latex-command: #007acc;
-  --latex-table: #6f42c1;
-}
-
-.latex-dual-editor.theme-dark {
-  --latex-bg: #1f2937;
-  --latex-fg: #f9fafb;
-  --latex-surface: #374151;
-  --latex-border: #4b5563;
-  --latex-primary: #4da6ff;
-  --latex-secondary: #9ca3af;
-  --latex-success: #10b981;
-  --latex-warning: #f59e0b;
-  --latex-danger: #ef4444;
-  --latex-math: #a78bfa;
-  --latex-environment: #10b981;
-  --latex-command: #4da6ff;
-  --latex-table: #a78bfa;
-}
-
-/* MathLive theming */
-:root {
-  --ml-color: var(--latex-fg);
-  --ml-background: var(--latex-bg);
-  --ml-accent: var(--latex-primary);
-  --ml-highlight: var(--latex-primary);
-  --ml-primary: var(--latex-primary);
-  --ml-text: var(--latex-fg);
-  --ml-surface: var(--latex-surface);
-}
-
-.theme-dark {
-  --ml-highlight: #4da6ff;
-  --ml-primary: #4da6ff;
-  --ml-text: #f9fafb;
-  --ml-surface: #374151;
-}
-
-/* Base editor styles */
-.latex-dual-editor {
+.lv-dual-editor {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid var(--latex-border);
-  border-radius: 6px;
   overflow: hidden;
-  background-color: var(--latex-bg);
-  color: var(--latex-fg);
+  border: 1px solid var(--lv-border);
+  border-radius: 6px;
+  background: var(--lv-bg);
+  color: var(--lv-fg);
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-.latex-editor-toolbar {
+.lv-mode-bar,
+.lv-toolbar {
   display: flex;
-  background-color: var(--latex-surface);
-  border-bottom: 1px solid var(--latex-border);
-  padding: 8px;
+  flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
+  padding: var(--lv-spacing-container);
+  background: var(--lv-surface);
+  border-bottom: 1px solid var(--lv-border);
 }
 
-.mode-btn, .toggle-cmd-btn, .toggle-math-hover-btn, .toggle-toolbar-btn {
-  padding: 6px 12px;
-  border: 1px solid var(--latex-border);
-  background: var(--latex-bg);
-  color: var(--latex-fg);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-
-.mode-btn:hover, .toggle-cmd-btn:hover, .toggle-math-hover-btn:hover, .toggle-toolbar-btn:hover {
-  background: var(--latex-surface);
-  border-color: var(--latex-primary);
-}
-
-.mode-btn.active {
-  background: var(--latex-primary);
-  color: white;
-  border-color: var(--latex-primary);
-}
-
-.toggle-cmd-btn.active {
-  background: var(--latex-success);
-  color: white;
-  border-color: var(--latex-success);
-}
-
-.toggle-math-hover-btn.active {
-  background: var(--latex-success);
-  color: white;
-  border-color: var(--latex-success);
-}
-
-.toggle-toolbar-btn.active {
-  background: var(--latex-warning);
-  color: white;
-  border-color: var(--latex-warning);
-}
-
-.unified-toolbar-container {
-  display: none;
-  border-bottom: 1px solid var(--latex-border);
-  flex-shrink: 0;
-  background-color: var(--latex-surface);
-}
-
-.unified-toolbar {
+.lv-toolbar-items {
   display: flex;
-  background-color: var(--latex-surface);
-  padding: 8px;
-  gap: 12px;
-  align-items: center;
   flex-wrap: wrap;
-  color: var(--latex-fg);
+  gap: 8px;
 }
 
-.toolbar-group {
+.lv-toolbar-group {
   display: flex;
   gap: 4px;
-  align-items: center;
-  border-right: 1px solid var(--latex-border);
-  padding-right: 12px;
+  padding-right: 8px;
+  border-right: 1px solid var(--lv-border);
 }
 
-.toolbar-group:last-child {
+.lv-toolbar-group:last-of-type {
   border-right: none;
-  padding-right: 0;
 }
 
-.toolbar-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--latex-border);
-  background: var(--latex-bg);
-  color: var(--latex-fg);
-  border-radius: 4px;
+.lv-mode-bar button,
+.lv-toolbar button {
+  min-width: 30px;
+  padding: 4px 10px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.toolbar-btn:hover {
-  background: var(--latex-surface);
-  border-color: var(--latex-primary);
-}
-
-.toolbar-btn:active {
-  transform: translateY(1px);
-}
-
-.toolbar-select {
-  padding: 6px 8px;
-  border: 1px solid var(--latex-border);
+  color: var(--lv-fg);
+  background: var(--lv-bg);
+  border: 1px solid var(--lv-border);
   border-radius: 4px;
-  background: var(--latex-bg);
-  color: var(--latex-fg);
-  cursor: pointer;
   font-size: 13px;
+  line-height: 1.4;
 }
 
-.toolbar-color {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--latex-border);
-  border-radius: 4px;
+.lv-mode-bar button:hover,
+.lv-toolbar button:hover {
+  border-color: var(--lv-primary);
+}
+
+.lv-mode-bar button.active {
+  color: #fff;
+  background: var(--lv-primary);
+  border-color: var(--lv-primary);
+}
+
+.lv-mode-bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lv-toolbar input[type='color'] {
+  width: 30px;
+  height: 26px;
+  padding: 0;
   cursor: pointer;
-  padding: 2px;
-  background: var(--latex-bg);
+  background: none;
+  border: 1px solid var(--lv-border);
+  border-radius: 4px;
 }
 
-.toolbar-table-container {
-  position: relative;
+.lv-editor-host {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .table-selector-dropdown {
-  display: none;
   position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1000;
-  background: var(--latex-bg);
-  border: 1px solid var(--latex-border);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 20;
   padding: 8px;
-  min-width: 180px;
-  max-height: 300px;
-  overflow: visible;
-}
-
-.theme-dark .table-selector-dropdown {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.table-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+  background: var(--lv-bg);
+  border: 1px solid var(--lv-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
 }
 
 .table-grid {
   display: grid;
   grid-template-columns: repeat(8, 16px);
-  grid-template-rows: repeat(8, 16px);
-  gap: 1px;
-  margin-bottom: 8px;
-  border: 1px solid var(--latex-border);
-  padding: 2px;
-  background: var(--latex-bg);
+  gap: 2px;
 }
 
 .table-grid-cell {
   width: 16px;
   height: 16px;
-  border: 1px solid var(--latex-border);
-  cursor: pointer;
-  background: var(--latex-surface);
-  transition: background-color 0.1s ease;
+  border: 1px solid var(--lv-border);
 }
 
-.table-grid-cell.highlighted {
-  background: var(--latex-primary);
-  border-color: var(--latex-primary);
+.table-grid-cell.active {
+  background: var(--lv-primary);
+  border-color: var(--lv-primary);
 }
 
 .table-selector-label {
+  margin-top: 6px;
+  text-align: center;
   font-size: 12px;
-  color: var(--latex-secondary);
-  font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
+  color: var(--lv-secondary);
 }
 
-.latex-editors-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+.cm-lv-heading {
+  font-weight: 700;
+  line-height: 1.3;
 }
 
-.codemirror-container {
-  flex: 1;
-  min-height: 0;
+.cm-lv-h1 { font-size: 1.8em; }
+.cm-lv-h2 { font-size: 1.45em; }
+.cm-lv-h3 { font-size: 1.2em; }
+.cm-lv-h4,
+.cm-lv-h5 { font-size: 1.05em; }
+
+.cm-lv-env,
+.cm-lv-list {
+  padding-left: 12px;
+  border-left: 3px solid var(--lv-environment);
 }
 
-.codemirror-container .cm-editor {
-  height: 100%;
-  background-color: var(--latex-bg);
-  color: var(--latex-fg);
+.cm-lv-list {
+  border-left-color: var(--lv-secondary);
 }
 
-/* Visual mode styles for CodeMirror */
-.cm-visual-mode .latex-visual-widget {
-  display: inline-block;
-  position: relative;
-}
-
-.latex-visual-section {
-  display: block;
-  font-weight: bold;
-  margin: 1em 0 0.5em 0;
-  border-bottom: 1px solid var(--latex-border);
-  padding-bottom: 0.2em;
-  color: var(--latex-fg);
-}
-
-.latex-visual-section-1 {
-  font-size: 1.8em;
-}
-
-.latex-visual-section-2 {
-  font-size: 1.5em;
-}
-
-.latex-visual-section-3 {
-  font-size: 1.2em;
-}
-
-.latex-visual-section-command {
-  display: block;
-  margin: 20px 0 10px 0;
-  padding: 8px 12px;
-  background: var(--latex-surface);
-  border-left: 4px solid var(--latex-primary);
-  border-radius: 4px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: var(--latex-fg);
-}
-
-.latex-cmd-prefix,
-.latex-cmd-suffix {
-  color: var(--latex-command);
-  font-weight: 600;
-  user-select: none;
-}
-
-.latex-cmd-content {
-  font-weight: bold;
-  color: var(--latex-fg);
-}
-
-/* List widget styles */
-.latex-visual-list {
-  margin: 0;
-  padding: 0;
-  line-height: 1.4;
-  color: var(--latex-fg);
-}
-
-.latex-visual-list-element {
-  margin: 0;
-  padding-left: 40px;
-  line-height: 1.4;
-}
-
-.latex-list-item {
-  margin: 0;
-  padding: 0;
-  cursor: text;
-  position: relative;
-  line-height: 1.4;
-  min-height: 1.4em;
-  color: var(--latex-fg);
-}
-
-.latex-description-item {
-  margin: 0;
-  padding: 0;
-  position: relative;
-  line-height: 1.4;
-}
-
-.latex-description-item dt {
-  font-weight: bold;
-  cursor: text;
-  margin: 0;
-  padding: 0;
-  line-height: 1.4;
-  min-height: 1.4em;
-  color: var(--latex-fg);
-}
-
-.latex-description-item dd {
-  margin: 0 0 0 20px;
-  padding: 0;
-  cursor: text;
-  line-height: 1.4;
-  min-height: 1.4em;
-  color: var(--latex-fg);
-}
-
-.latex-list-item:focus,
-.latex-description-item dt:focus,
-.latex-description-item dd:focus {
-  outline: 1px solid var(--latex-primary);
-  outline-offset: 1px;
-  background: rgba(var(--latex-primary-rgb, 0, 122, 204), 0.05);
-}
-
-.latex-visual-math-inline {
-  background: none;
-  border: none;
-  margin: 0 1px;
-  cursor: pointer;
-  color: var(--latex-math);
-}
-
-.latex-visual-math-display {
-  display: block;
-  background: none;
-  padding: 10px;
-  margin: 10px 0;
-  text-align: center;
-  cursor: pointer;
-  color: var(--latex-math);
-}
-
-.latex-math-command-wrapper {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  background: var(--latex-surface);
-  border: 1px solid var(--latex-math);
-  border-radius: 4px;
-  padding: 8px;
-  color: var(--latex-fg);
-}
-
-.latex-visual-environment {
-  display: block;
-  margin: 10px 0;
-  padding: 10px;
-  border-left: 3px solid var(--latex-environment);
-  background: var(--latex-surface);
-  border-radius: 4px;
-  color: var(--latex-fg);
-}
-
-.latex-env-command {
-  margin: 10px 0;
-  padding: 10px;
-  background: var(--latex-surface);
-  border: 1px solid var(--latex-environment);
-  border-radius: 4px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: var(--latex-fg);
-}
-
-.env-begin,
-.env-end {
-  color: var(--latex-environment);
-  font-weight: 600;
-  margin: 5px 0;
-}
-
-.env-content {
-  margin: 10px 0;
-  padding-left: 20px;
-  border-left: 2px solid var(--latex-border);
-}
-
-.env-header {
-  font-weight: bold;
-  font-size: 0.9em;
-  margin-bottom: 8px;
-  text-transform: capitalize;
-  color: var(--latex-fg);
-}
-
-.latex-visual-command {
-  display: inline;
-  padding: 1px 2px;
-  border-radius: 2px;
-  background: var(--latex-surface);
-  color: var(--latex-fg);
-}
-
-.latex-visual-command.textbf {
-  font-weight: bold;
-}
-
-.latex-visual-command.textit {
+.cm-lv-comment {
+  color: var(--lv-secondary);
   font-style: italic;
 }
 
-.latex-visual-command.underline {
-  text-decoration: underline;
-}
+.cm-lv-bold { font-weight: 700; }
+.cm-lv-italic { font-style: italic; }
+.cm-lv-underline { text-decoration: underline; }
+.cm-lv-smallcaps { font-variant: small-caps; }
+.cm-lv-sans { font-family: system-ui, sans-serif; }
 
-.latex-visual-command.textsc {
-  font-variant: small-caps;
-}
-
-.latex-visual-command.textsf {
-  font-family: sans-serif;
-}
-
-.latex-visual-command.texttt {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  background: var(--latex-surface);
-  border-radius: 2px;
-  padding: 1px 2px;
-}
-
-.latex-command-raw {
-  display: inline-block;
-  margin: 0 2px;
-  padding: 2px 6px;
-  background: var(--latex-surface);
-  border: 1px solid var(--latex-danger);
+.cm-lv-mono {
+  font-family: ui-monospace, monospace;
+  background: color-mix(in srgb, var(--lv-fg) 8%, transparent);
   border-radius: 3px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.9em;
-  color: var(--latex-danger);
+  padding: 0 3px;
 }
 
-.latex-command-wrapper {
-  position: relative;
+.cm-lv-content {
   display: inline;
-  cursor: text;
-  border-radius: 2px;
-  transition: background-color 0.2s ease;
-  color: var(--latex-fg);
 }
 
-.latex-command-wrapper:focus {
-  background: rgba(var(--latex-primary-rgb, 0, 122, 204), 0.05) !important;
-  outline: none;
+.cm-lv-string {
+  color: var(--lv-command);
 }
 
-.latex-command-wrapper:hover {
-  background: rgba(var(--latex-primary-rgb, 0, 122, 204), 0.03);
+.cm-lv-cmd {
+  color: var(--lv-command);
 }
 
-.latex-command-wrapper[tabindex="0"] {
-  padding: 1px 2px;
-  margin: -1px -2px;
+.cm-lv-cmd-unknown {
+  color: var(--lv-danger);
+  font-family: ui-monospace, monospace;
+  font-size: 0.92em;
 }
 
-.latex-command-wrapper span[contenteditable="true"] {
-  position: relative;
-  z-index: 1000;
+.cm-lv-colored { color: var(--lv-primary); }
+
+.cm-lv-colorbox {
+  background: color-mix(in srgb, var(--lv-warning) 30%, transparent);
+}
+
+.cm-lv-marker {
   display: inline-block;
-  min-width: 3em;
+  min-width: 1.2em;
+  color: var(--lv-secondary);
 }
 
-.latex-visual-table {
-  border-collapse: collapse;
-  margin: 10px 0;
-  width: 100%;
-  border: 1px solid var(--latex-border);
-  background-color: var(--latex-bg);
+.cm-lv-widget {
+  color: var(--lv-fg);
 }
 
-.latex-table-cell {
-  border: 1px solid var(--latex-border);
-  padding: 8px 12px;
-  min-width: 60px;
-  background-color: var(--latex-bg);
-  color: var(--latex-fg);
-}
-
-.latex-table-command {
-  margin: 10px 0;
-  padding: 10px;
-  background: var(--latex-surface);
-  border: 1px solid var(--latex-table);
-  border-radius: 4px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: var(--latex-fg);
-}
-
-.table-begin,
-.table-end {
-  color: var(--latex-table);
-  font-weight: 600;
-  margin: 5px 0;
-  font-size: 0.9em;
-}
-
-/* MathLive styles with theming */
-math-field {
-  color: var(--latex-fg);
-  background: var(--latex-bg);
-}
-
-math-field.math-inline-field {
-  background: none;
-  border: none;
-  padding: 2px 4px;
-  margin: 0 1px;
-  font-size: 1em;
-  cursor: pointer;
-  min-width: 3em;
-  pointer-events: auto;
-  color: var(--latex-math);
-}
-
-math-field.math-display-field {
-  background: none;
-  border: none;
-  padding: 10px;
-  margin: 10px 0;
-  width: 100%;
-  font-size: 1.2em;
-  cursor: pointer;
-  min-height: 3em;
-  pointer-events: auto;
-  box-sizing: border-box;
-  display: block;
-  color: var(--latex-math);
-}
-
-math-field:hover {
-  background: none;
-}
-
-math-field:focus,
-math-field:focus-within,
-math-field.focused {
-  outline: 2px solid var(--latex-primary);
-  outline-offset: 1px;
-  background: none;
-  border-color: var(--latex-primary);
-}
-
-.math-edit-indicator {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: var(--latex-primary);
-  color: white;
-  font-size: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-  z-index: 10;
-  user-select: none;
-}
-
-.math-edit-indicator.visible {
-  opacity: 1;
-}
-
-.mathfield-editor-overlay {
-  position: fixed;
-  min-width: 250px;
-  min-height: 80px;
-  z-index: 10000;
-  background: var(--latex-bg);
-  border: 2px solid var(--latex-primary);
-  border-radius: 6px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 10px;
-}
-
-.theme-dark .mathfield-editor-overlay {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.math-editor-buttons {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.math-editor-btn {
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.math-editor-btn-cancel {
-  background: var(--latex-secondary);
-  color: white;
-}
-
-.math-editor-btn-done {
-  background: var(--latex-primary);
-  color: white;
-}
-
-.math-inline-field.editing,
-.math-display-field.editing {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.math-inline-field.editing {
-  min-width: 4em;
-}
-
-.math-display-field.editing {
-  min-height: 2em;
-}
-
-/* Math hover widget styles */
-.math-hover-preview {
-  position: fixed;
-  z-index: 10000;
-  background: var(--latex-bg);
-  border: 2px solid var(--latex-primary);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
-  min-width: 100px;
-  font-size: 14px;
-  line-height: 1.4;
-  transition: all 0.2s ease;
-  cursor: default;
-  color: var(--latex-fg);
-}
-
-.theme-dark .math-hover-preview {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.math-hover-preview:hover {
-  border-color: var(--latex-primary);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-}
-
-.theme-dark .math-hover-preview:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-}
-
-.math-preview-container {
-  position: relative;
+.cm-lv-math-inline {
   display: inline-block;
-  min-height: 20px;
+  vertical-align: middle;
+  color: var(--lv-math);
 }
 
-.math-preview-container.display {
+.cm-lv-math-display {
   display: block;
-  margin: 10px 0;
-  min-height: 40px;
+  padding: var(--lv-spacing-container);
+  margin: var(--lv-spacing-widget);
   text-align: center;
+  color: var(--lv-math);
 }
 
-.math-preview-container.inline {
+.cm-lv-image img {
   display: inline-block;
-  margin: 0 2px;
-  min-height: 20px;
+  max-width: 100%;
+  vertical-align: middle;
+  border-radius: 3px;
 }
 
-.math-hover-preview math-field {
-  background: none;
-  border: none;
-  padding: 4px;
-  margin: 0;
-  font-size: inherit;
-  min-width: 2em;
-  pointer-events: auto;
-  transition: all 0.2s ease;
-  color: var(--latex-fg);
+.cm-lv-image-missing img {
+  min-width: 80px;
+  min-height: 48px;
+  border: 1px dashed var(--lv-border);
 }
 
-.math-hover-preview math-field:hover {
-  background: var(--latex-surface);
+.cm-lv-math-tooltip {
+  padding: 6px 10px;
+  background: var(--lv-surface, #fff);
+  border: 1px solid var(--lv-border, #ddd);
   border-radius: 4px;
 }
 
-.math-hover-preview math-field:focus,
-.math-hover-preview math-field.focused {
-  outline: 2px solid var(--latex-primary);
-  outline-offset: 1px;
-  background: var(--latex-bg);
-  border-radius: 4px;
+.cm-lv-table table {
+  border-collapse: collapse;
+  margin: var(--lv-spacing-widget);
 }
 
-.math-hover-preview math-field[readonly="false"] {
-  background: var(--latex-bg);
-  border: 1px solid var(--latex-primary);
-  border-radius: 4px;
-  padding: 6px;
-}
-
-.math-edit-button {
-  position: absolute;
-  background: var(--latex-primary);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  opacity: 0;
-  transition: all 0.2s ease;
-  z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  user-select: none;
-}
-
-.math-edit-button:hover {
-  background: var(--latex-primary);
-  transform: scale(1.1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-}
-
-.math-edit-button:active {
-  transform: scale(0.95);
-}
-
-.math-preview-container.display .math-edit-button {
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
-  font-size: 12px;
-}
-
-.math-preview-container.inline .math-edit-button {
-  top: -8px;
-  right: -8px;
-  width: 20px;
-  height: 20px;
-  font-size: 10px;
-}
-
-.math-preview-container:hover .math-edit-button,
-.math-edit-button:hover {
-  opacity: 1;
-}
-
-.math-hover-preview .math-editor-buttons {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--latex-border);
-}
-
-.math-hover-preview .math-editor-btn {
-  border: none;
-  border-radius: 4px;
-  padding: 8px 14px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
+.cm-lv-table td {
+  padding: var(--lv-spacing-cell);
+  border: 1px solid var(--lv-border);
   min-width: 60px;
 }
 
-.math-hover-preview .math-editor-btn-cancel {
-  background: var(--latex-secondary);
-  color: white;
+.cm-lv-table td.cm-lv-cell-active {
+  box-shadow: inset 0 0 0 2px var(--lv-cell-color, var(--lv-primary));
 }
 
-.math-hover-preview .math-editor-btn-cancel:hover {
-  background: var(--latex-secondary);
-  transform: translateY(-1px);
+.cm-lv-table td:focus {
+  outline: 2px solid var(--lv-primary);
+  outline-offset: -2px;
 }
 
-.math-hover-preview .math-editor-btn-done {
-  background: var(--latex-primary);
-  color: white;
+math-field {
+  border: none;
+  background: none;
 }
 
-.math-hover-preview .math-editor-btn-done:hover {
-  background: var(--latex-primary);
-  transform: translateY(-1px);
-}
-
-.math-hover-preview .math-editor-btn:active {
-  transform: translateY(0);
-}
-
-/* Animation for math hover appearance */
-@keyframes mathHoverSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.math-hover-preview {
-  animation: mathHoverSlideIn 0.25s ease-out;
-}
-
-/* Visual feedback for hoverable math in source mode */
-.cm-editor .cm-line {
-  position: relative;
-}
-
-.cm-editor[data-math-hover-enabled="true"] .cm-line:has-text("$") {
-  background: rgba(var(--latex-primary-rgb, 0, 122, 204), 0.02);
-  transition: background 0.2s ease;
-}
-
-.cm-editor[data-math-hover-enabled="true"] .cm-line:hover {
-  background: rgba(var(--latex-primary-rgb, 0, 122, 204), 0.05);
-}
-
-.math-hover-preview * {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-.math-hover-preview math-field[readonly="false"] * {
-  user-select: text;
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-}
-
-.cm-editor[data-math-hover-enabled="true"] {
-  cursor: default;
-}
-
-.cm-editor[data-math-hover-enabled="true"] .cm-line:has-text("$") {
-  cursor: help;
-}
-
-/* Enhanced visual states */
-.math-hover-preview.editing {
-  border-color: var(--latex-success);
-  box-shadow: 0 6px 24px rgba(var(--latex-success-rgb, 40, 167, 69), 0.2);
-}
-
-.math-hover-preview.editing .math-preview-container {
-  background: rgba(var(--latex-success-rgb, 40, 167, 69), 0.05);
-  border-radius: 4px;
-}
-
-/* Tooltip for edit button */
-.math-edit-button::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  pointer-events: none;
-  margin-bottom: 4px;
-}
-
-.math-edit-button:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .latex-dual-editor {
-    border-radius: 0;
-  }
-
-  .latex-editor-toolbar {
-    padding: 6px;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .mode-btn, .toggle-cmd-btn, .toggle-math-hover-btn, .toggle-toolbar-btn {
-    padding: 4px 8px;
-    font-size: 12px;
-  }
-
-  .unified-toolbar {
-    padding: 6px;
-    gap: 8px;
-  }
-
-  .toolbar-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-
-  .math-hover-preview {
-    max-width: calc(100vw - 20px);
-    left: 10px !important;
-    right: 10px;
-    transform: none;
-  }
-  
-  .math-preview-container.display .math-edit-button {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-    top: 4px;
-    right: 4px;
-  }
-  
-  .math-preview-container.inline .math-edit-button {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-    top: -6px;
-    right: -6px;
-  }
-}
-
-@media (max-width: 480px) {
-  .latex-editor-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .mode-btn, .toggle-cmd-btn, .toggle-math-hover-btn, .toggle-toolbar-btn {
-    width: 100%;
-    text-align: center;
-  }
-
-  .unified-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .toolbar-group {
-    border-right: none;
-    border-bottom: 1px solid var(--latex-border);
-    padding-right: 0;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-    justify-content: center;
-  }
-
-  .toolbar-group:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
-}
-
-/* Print styles */
-@media print {
-  .latex-dual-editor {
-    border: none;
-    box-shadow: none;
-  }
-
-  .latex-editor-toolbar,
-  .unified-toolbar-container {
-    display: none !important;
-  }
-
-  .latex-visual-widget {
-    break-inside: avoid;
-  }
-
-  .math-hover-preview,
-  .mathfield-editor-overlay {
-    display: none !important;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .latex-dual-editor {
-    border-width: 2px;
-  }
-
-  .mode-btn, .toggle-cmd-btn, .toggle-math-hover-btn, .toggle-toolbar-btn {
-    border-width: 2px;
-    font-weight: bold;
-  }
-
-  .latex-visual-section {
-    border-bottom-width: 2px;
-  }
-
-  .latex-visual-environment {
-    border-left-width: 4px;
-  }
-
-  .math-hover-preview {
-    border-width: 3px;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .math-hover-preview {
-    animation: none;
-  }
-
-  .toolbar-btn,
-  .mode-btn,
-  .toggle-cmd-btn,
-  .toggle-math-hover-btn,
-  .toggle-toolbar-btn {
-    transition: none;
-  }
-}
-
-.ML__popover, .ML__menu, .ML__keyboard { z-index: 10001; }
-
-body {
-  /* toolbar */
-  --keyboard-accent-color: var(--latex-primary);
-  --keyboard-toolbar-text: var(--latex-fg);
-  --keyboard-toolbar-text-active: #fff;
-  --keyboard-toolbar-background: var(--latex-surface, var(--latex-bg));
-  --keyboard-toolbar-background-hover: var(--latex-primary);
-  --keyboard-toolbar-background-selected: var(--latex-primary);
-
-  /* keycaps */
-  --keycap-background: var(--latex-surface, var(--latex-bg));
-  --keycap-background-hover: var(--latex-primary);
-  --keycap-background-active: var(--latex-primary);
-  --keycap-background-pressed: var(--latex-primary);
-  --keycap-border: var(--latex-border);
-  --keycap-border-bottom: var(--latex-border);
-  --keycap-text: var(--latex-fg);
-  --keycap-text-hover: #fff;
-  --keycap-text-active: #fff;
-  --keycap-text-pressed: #fff;
-  --keycap-shift-text: var(--latex-fg);
-  --keycap-shift-color: var(--latex-primary);
-
-  /* primary/secondary “special” keys */
-  --keycap-primary-background: var(--latex-primary);
-  --keycap-primary-text: #fff;
-  --keycap-primary-background-hover: var(--latex-primary);
-  --keycap-secondary-background: var(--latex-surface, var(--latex-bg));
-  --keycap-secondary-background-hover: var(--latex-primary);
-  --keycap-secondary-text: var(--latex-fg);
-  --keycap-secondary-border: var(--latex-border);
-  --keycap-secondary-border-bottom: var(--latex-border);
-
-  /* variant popup */
-  --variant-panel-background: var(--latex-bg);
-  --variant-keycap-text: var(--latex-fg);
-  --variant-keycap-text-active: #fff;
-  --variant-keycap-background-active: var(--latex-primary);
-
-  /* borders / separators */
-  --keyboard-border: 1px solid var(--latex-border);
-  --keyboard-horizontal-rule: 1px solid var(--latex-border);
-}
-
-.ML__menu,
-.ML__popover,
-.ML__keyboard {
-  color: var(--latex-fg) !important;
-  border: 1px solid var(--latex-border) !important;
-  border-radius: 6px;
-}
-.ML__keyboard button,
-.ML__menu button {
-  background: var(--latex-surface, var(--latex-bg));
-  color: var(--latex-fg);
-  border: 1px solid var(--latex-border);
-}
-.ML__keyboard button:hover,
-.ML__menu button:hover {
-  background: var(--latex-primary);
-  color: #fff;
+math-field.focused {
+  outline: 1px solid var(--lv-primary);
+  border-radius: 3px;
 }

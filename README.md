@@ -1,254 +1,268 @@
-# CodeMirror 6 LaTeX Visual Editor
+# CodeMirror Visual Markup Editor
 
-![Status: Experimental](https://img.shields.io/badge/status-experimental-red)
+Visual (WYSIWYM) editing for markup languages in [CodeMirror 6](https://codemirror.net/6/).
+LaTeX and Typst ship in the box; other languages plug in without touching the editor core.
 
-> [!WARNING]
-> This repository is experimental.
-> Expect breaking changes and unstable APIs.
+The source document is always authoritative. Visual mode is a decoration layer over the real
+text, so every edit is an ordinary CodeMirror transaction and nothing is ever re-serialised
+from a mirrored DOM tree.
 
-**WIP** This package provides WYSIWYM visual editing for LaTeX documents in [CodeMirror 6](https://codemirror.net/6/), designed to work with academic writing workflows and document preparation.
+## Install
 
-## Features
-
-- Visual editing - LaTeX source remains authoritative
-- Real-time bidirectional synchronization between source and visual editors
-- Visual representation of LaTeX structures (sections, math blocks, environments)
-- Mathlive rendering and editing for math content
-- Mode switching between source and visual editing
-- Works with any existing CodeMirror 6 setup
-- Preserves LaTeX formatting and commands exactly as written
-- Keyboard shortcut (Ctrl+E / Cmd+E) to toggle editing modes
-- Support for:
-  - Sections (`\section{}`, `\subsection{}`, `\subsubsection{}`)
-  - Math environments (inline `$...$` and display `$$...$$`)
-  - LaTeX environments (`\begin{env}...\end{env}`)
-  - LaTeX commands with parameters
-  - Mixed content paragraphs with multiple commands
-
-## Installation
-
-```bash
+```
 npm install codemirror-latex-visual
 ```
 
+`mathlive` is an optional peer dependency, loaded on demand the first time a formula renders.
+
 ## Usage
 
-```javascript
-import { EditorState, EditorView } from '@codemirror/state';
-import { DualLatexEditor } from 'codemirror-latex-visual';
+```js
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import { DualVisualEditor } from 'codemirror-latex-visual';
 import 'codemirror-latex-visual/dist/styles.css';
 
-// Create your CodeMirror editor as usual
-const cmEditor = new EditorView({
-  state: EditorState.create({
-    doc: `\\section{Introduction}
-This is a sample document with $E = mc^2$ inline math.
-
-$$\\int_{0}^{1} x^2 dx = \\frac{1}{3}$$
-
-\\begin{theorem}
-This is a theorem environment.
-\\end{theorem}`,
-    extensions: [
-      // ... your existing extensions
-    ]
-  }),
-  parent: document.querySelector('#cm-container')
+const view = new EditorView({
+  state: EditorState.create({ doc: '\\section{Title}\n\nMath: $E = mc^2$.' })
 });
 
-// Add visual editing capability
-const dualEditor = new DualLatexEditor(
-  document.querySelector('#editor-wrapper'),
-  cmEditor,
-  {
-    initialMode: 'source',
-    onModeChange: (mode) => console.log('Switched to:', mode)
-  }
-);
-```
-
-### Configuration Options
-
-You can configure the dual editor by passing options:
-
-```javascript
-import { DualLatexEditor } from 'codemirror-latex-visual';
-
-// With all options explicitly set
-const dualEditor = new DualLatexEditor(container, cmEditor, {
-  initialMode: 'source',           // Start in source mode
-  onModeChange: (mode) => {},      // Mode change callback
-  className: 'my-custom-class'     // Additional CSS class
+const editor = new DualVisualEditor(document.querySelector('#app'), view, {
+  language: 'latex',
+  initialMode: 'visual'
 });
 ```
 
-## API
+`DualLatexEditor` is a thin subclass pinned to `language: 'latex'`.
 
-### DualLatexEditor
+### Keyboard
 
-The main class that creates a dual editing interface for LaTeX.
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl`/`Cmd` + `E` | Toggle source and visual mode |
+| `Ctrl`/`Cmd` + `Shift` + `C` | Reveal markup in visual mode |
+| `Ctrl`/`Cmd` + `Shift` + `M` | Toggle math hover preview |
+| `Ctrl`/`Cmd` + `Shift` + `T` | Toggle the formatting toolbar |
 
-```javascript
-import { DualLatexEditor } from 'codemirror-latex-visual';
-
-const dualEditor = new DualLatexEditor(container, cmEditor, options);
-```
-
-**Parameters:**
-- `container`: HTMLElement to contain the dual editor interface
-- `cmEditor`: Existing CodeMirror EditorView instance
-- `options`: Configuration object (optional)
-
-**Options:**
-- `initialMode`: 'source' | 'visual' - Initial editing mode (default: 'source')
-- `onModeChange`: Function called when mode changes
-- `className`: Additional CSS class for styling
-
-**Methods:**
-```javascript
-// Switch editing mode programmatically
-dualEditor.setMode('visual');
-dualEditor.setMode('source');
-
-// Toggle between modes
-dualEditor.toggleMode();
-
-// Clean up resources
-dualEditor.destroy();
-```
-
-### latexVisualKeymap
-
-An extension that adds keyboard shortcuts for mode switching when used in CodeMirror.
-
-```javascript
-import { latexVisualKeymap } from 'codemirror-latex-visual';
-
-const extensions = [
-  // ... other extensions
-  latexVisualKeymap(dualEditor)
-];
-```
-
-### Parsing Functions
-
-Convert between LaTeX and ProseMirror document formats.
-
-```javascript
-import { parseLatexToProseMirror, renderProseMirrorToLatex } from 'codemirror-latex-visual';
-
-const pmDoc = parseLatexToProseMirror(latexString);
-const latexString = renderProseMirrorToLatex(pmDoc);
-```
-
-### latexVisualSchema
-
-The ProseMirror schema used for visual editing. Can be extended for custom LaTeX constructs.
-
-```javascript
-import { latexVisualSchema } from 'codemirror-latex-visual';
-```
-
-### Styling
-
-The package includes CSS styles for the visual editor in `dist/styles.css`. Import these styles to get the default visual editing interface:
-
-```javascript
-import 'codemirror-latex-visual/dist/styles.css';
-```
-
-You can also customize styles in your own CSS by targeting the specific classes.
-
-## Advanced Usage
-
-### Extending the Schema
-
-You can extend the ProseMirror schema to support additional LaTeX constructs:
-
-```javascript
-import { Schema } from 'prosemirror-model';
-import { latexVisualSchema } from 'codemirror-latex-visual';
-
-const customSchema = new Schema({
-  nodes: {
-    ...latexVisualSchema.spec.nodes,
-    custom_environment: {
-      group: 'block',
-      content: 'block*',
-      attrs: { name: { default: '' }, latex: { default: '' } },
-      parseDOM: [{ tag: 'div.custom-env' }],
-      toDOM: node => ['div', { class: 'custom-env' }, 0]
-    }
-  },
-  marks: latexVisualSchema.spec.marks
-});
-```
-
-### Custom Sync Manager
-
-For advanced use cases, you can use the SyncManager directly:
-
-```javascript
-import { SyncManager } from 'codemirror-latex-visual';
-
-const syncManager = new SyncManager(cmEditor, pmEditor);
-
-// Manual synchronization
-syncManager.syncToVisual();  // Update ProseMirror from CodeMirror
-syncManager.syncToSource();  // Update CodeMirror from ProseMirror
-
-// Handle ProseMirror changes
-syncManager.handleProseMirrorChange(transaction);
-```
-
-## Supported LaTeX Constructs
-
-The package recognizes and provides visual editing for:
-
-- **Sections**: `\section{}`, `\subsection{}`, `\subsubsection{}`
-- **Mathematics**: Inline `$...$` and display `$$...$$` blocks
-- **Environments**: `\begin{env}...\end{env}` structures
-- **Commands**: LaTeX commands with braced parameters
-- **Mixed content**: Paragraphs containing text, math, and commands
-
-### Visual Representation
-
-- Sections appear as HTML headings (h1, h2, h3)
-- Math blocks are displayed with distinctive styling
-- Environments are shown as bordered containers
-- Commands are highlighted inline elements
-- All elements preserve their original LaTeX source
-
-## Keyboard Shortcuts
-
-- **Ctrl+E** (Windows/Linux) / **Cmd+E** (Mac): Toggle between source and visual editing modes
-
-## Building from Source
-
-```bash
-git clone https://github.com/texlyre/codemirror-latex-visual.git
-cd codemirror-latex-visual
-npm install
-npm run build
-```
-
-Run the demo:
-```bash
-npm run pages-example
-```
+Placing the cursor inside a construct reveals its markup inline, so hidden syntax is always
+reachable without leaving visual mode.
 
 ## Architecture
 
-The package uses a dual-editor approach:
+```
+src/core/       tokens, scanner, tokenizer, language registry, config
+src/languages/  latex/, typst/
+src/view/       decorations, widgets, theme, math hover, visual extension
+src/ui/         dual editor, toolbar, table selector
+```
 
-1. **CodeMirror** remains the source of truth for LaTeX content
-2. **ProseMirror** provides visual representation and editing
-3. **SyncManager** handles bidirectional synchronization
-4. **Parser** converts between LaTeX and ProseMirror formats
-5. **Schema** defines the visual document structure
+Parsing produces a token tree carrying **absolute document offsets**. `buildDecorations`
+walks that tree and emits:
 
-Changes in either editor are immediately reflected in the other while preserving the exact LaTeX source formatting.
+- `Decoration.mark` on token bodies, which nest natively to any depth
+- `Decoration.replace` over delimiter ranges to hide markup
+- `Decoration.line` for block constructs such as headings and environments
+- atomic widgets only where content is genuinely opaque (math, tables)
+
+Because positions are absolute, widget edits write back with `view.posAtDOM` against an exact
+range rather than searching the document for a matching substring.
+
+## Adding a language
+
+A language is a set of rules plus a style mapping:
+
+```ts
+import { registerLanguage, Language } from 'codemirror-latex-visual';
+
+const markdown: Language = {
+  id: 'markdown',
+  name: 'Markdown',
+  rules: [heading, emphasis, code],
+  style(token) {
+    if (token.kind === 'heading') return { class: `cm-lv-h${token.level}`, block: true };
+    if (token.kind === 'command') return { class: 'cm-lv-bold' };
+    return null;
+  },
+  commands: { wrap: { bold: ['**', '**'] }, heading, list, table, color }
+};
+
+registerLanguage(markdown);
+```
+
+A `Rule` receives `(source, position, context)` and returns a token with absolute offsets, or
+`null`. Call `context.parse(from, to, mode)` to tokenize a child range; nesting depth is bounded
+by `config.maxDepth`. `TokenStyle` selects how a token renders: `class`, `block`, `hidden`,
+`keepSyntax`, `replaceWith`, or an atomic `widget`.
+
+Languages with more than one syntactic mode read `context.mode` and recurse with an explicit
+one. Typst uses this to parse call arguments as code — where string literals, `name:` labels
+and separators are recognised and hidden — while a `[...]` block inside those arguments returns
+to markup. LaTeX ignores modes entirely. `keepSyntax` suppresses child decorations as well as
+its own, so a construct showing raw source never has children quietly hiding parts of it.
+
+Optional `table` adapter (`parse` / `serialize`) enables the editable grid widget.
+
+## TeXlyre integration
+
+Toolbar items use the same contract as TeXlyre's `PluginToolbar`, so the bundled DOM toolbar
+can be swapped for it without touching this package:
+
+```ts
+import { toolbarEntries, scopeAt, isToolbarButton, getLanguage } from 'codemirror-latex-visual';
+
+const language = getLanguage('latex');
+const scope = scopeAt(view.state, view.state.selection.main.head, language);
+const entries = toolbarEntries(language, scope);
+
+<PluginToolbar
+  items={entries.map(entry =>
+    isToolbarButton(entry) ? { key: entry.key, label: t(entry.label), icon: icons[entry.key] } : entry
+  )}
+  onRun={key => {
+    const item = entries.find(entry => isToolbarButton(entry) && entry.key === key);
+    if (item && isToolbarButton(item)) item.command(view);
+  }}
+/>;
+```
+
+`ToolbarItem` is `{ key, label, icon?, command(view): boolean }` with `{ type: 'split' }` and
+`{ type: 'space' }` separators; keys are namespaced per language (`latex-bold`, `typst-bold`).
+`scopeAt` reports `inTable` / `inColor` so scoped entries appear only where they apply, and
+`wrapSelection` / `insertText` match the TeXlyre helper semantics.
+
+## Collaborative editing
+
+Remote carets and selections from `y-codemirror.next` render normally over marks, line
+decorations and plain text — that covers headings, emphasis, environments and lists, because
+those constructs only hide short delimiter spans. They do **not** render inside a replaced
+range, so a remote caret is invisible inside an atomic math or table widget, and inside hidden
+markup such as `\\textbf{`.
+
+Feed remote positions into the `revealRanges` facet to suppress the widget wherever a
+collaborator is working:
+
+```ts
+import { revealAt } from 'codemirror-latex-visual';
+
+const remote = awareness
+  .getStates()
+  .values()
+  .filter(state => state.cursor)
+  .map(state => state.cursor.head);
+
+view.dispatch({ effects: StateEffect.appendConfig.of(revealAt(remote)) });
+```
+
+Pass a colour to tint the indicator per collaborator: `revealAt(positions, user.color)`.
+Reconfigure the facet as awareness changes; the decoration field recomputes whenever its value
+changes identity.
+
+Tables are granular for remote presence: a collaborator's caret inside one does not drop the
+whole table back to source. The widget stays rendered and only the cell they are in is
+outlined, in their colour. The local caret still reveals the table as source, so you keep
+direct access to the markup and to language services. The highlight is applied through `updateDOM`, so moving between cells never rebuilds
+the table and never steals focus from a cell being edited. A non-empty selection spanning the
+table still falls back to source, which is what you want when editing the markup itself.
+Granularity comes from `TableAdapter.ranges`, which reports the absolute range of every cell;
+any language that implements it gets the same behaviour, and `TokenStyle.granular` opts a
+widget into it. Widgets are compared by their source text, so a remote edit elsewhere in the
+document does not tear down an open MathLive field or a focused table cell.
+
+Widget commits are guarded: `replaceRange` verifies the widget's original text still occupies
+its live range before dispatching, so a concurrent remote edit to the same formula causes the
+local widget edit to be rejected rather than overwrite the remote value.
+
+## Inline figures
+
+`\\includegraphics{...}` and `#image("...")` render inline. External URLs (`http:`, `data:`,
+`blob:`) load directly; project-relative paths go through a resolver you supply, so this
+package never needs to know how your files are stored:
+
+```ts
+import { createImageResolver, imageResolver } from 'codemirror-latex-visual';
+
+const resolver = createImageResolver(
+  () => currentFilePath,
+  async resolvedPath => {
+    const file = await fileStorageService.getFileByPath(resolvedPath);
+    if (!file?.content) return null;
+    return URL.createObjectURL(new Blob([file.content], { type: file.mimeType }));
+  }
+);
+
+// extensions: [imageResolver.of(resolver)]
+// on unmount: resolver.dispose()
+```
+
+`resolveImagePath(currentPath, src)` normalises `.` and `..` against the containing directory;
+absolute paths pass through. `createImageResolver` memoises by resolved path, so the same figure
+referenced twice is fetched once, and `dispose()` revokes every object URL it handed out.
+Unresolvable sources get a `cm-lv-image-missing` placeholder rather than a broken element.
+
+Captions need no special handling in either language. `\\begin{figure}` is an ordinary container,
+so `\\caption{...}` stays editable text beside the rendered image. Typst's
+`#figure(image("plot.png"), caption: [A *nice* plot])` renders the same way: argument
+separators and the `caption:` label are hidden, the nested `image(...)` call becomes the
+figure, and the content block is parsed as markup so its emphasis still works and the text
+stays editable.
+
+## Language services (LSP, autocomplete, diagnostics, highlighting)
+
+Visual mode is a decoration layer over the real document, so anything that renders as a
+`Decoration.mark` or `Decoration.line` — syntax highlighting, lint underlines, LSP squiggles,
+selection matching — composes normally with it. Autocomplete, hover and code actions operate on
+the live text and the live selection, so they work unchanged.
+
+The exception is an atomic widget: nothing inside a replaced range is drawn, and MathLive
+fields and table cells are foreign DOM outside CodeMirror's text model. Two things keep that
+from mattering:
+
+**The widget dissolves under the caret.** The local selection always reveals the construct it
+touches, and the widget's boundary is not atomic, so the caret can step onto it and walk into
+the raw source. Wherever you are actually working, you are editing real text with every service
+attached. Widgets only exist where the caret is not.
+
+**Diagnostics you are not looking at** would otherwise be invisible. Feed their ranges into the
+reveal facet so the affected construct renders as source:
+
+```ts
+import { revealFrom } from 'codemirror-latex-visual';
+import { forEachDiagnostic, lintState } from '@codemirror/lint';
+
+revealFrom([lintState], state => {
+  const ranges: { from: number; to: number }[] = [];
+  forEachDiagnostic(state, (_diagnostic, from, to) => ranges.push({ from, to }));
+  return ranges;
+});
+```
+
+`revealFrom(deps, compute)` is a thin wrapper over `Facet.compute`, so any state — LSP results,
+search matches, a review pane's selection — can force a construct open without this package
+depending on it.
+
+## LaTeX macro signatures
+
+The parser is a lossless offset-preserving scanner, not an AST adapter, because
+`@unified-latex` drops `position` on every `argument` node and ends a macro node at the command
+name — the body range needed for decorations is not recoverable without re-scanning. If you
+already depend on unified-latex, feed its CTAN records in to widen argument handling:
+
+```ts
+import { setMacroSignatures } from 'codemirror-latex-visual';
+import { macros } from '@unified-latex/unified-latex-ctan/package/xcolor';
+
+setMacroSignatures(macros);
+```
+
+## Scripts
+
+```
+npm run build          # type check, bundle, copy styles
+npm test               # jest (ts-jest, jsdom)
+npm run test:coverage
+npm run pages-example
+```
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) file for details.
+MIT
