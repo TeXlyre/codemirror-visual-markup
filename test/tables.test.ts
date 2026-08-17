@@ -5,6 +5,7 @@ import { Token, walk } from '../src/core/tokens';
 import { scopeAt } from '../src/core/scope';
 import { isToolbarButton, ToolbarItem, toolbarEntries } from '../src/core/toolbar';
 import { latex } from '../src/languages/latex';
+import { typst } from '../src/languages/typst';
 import { Toolbar } from '../src/ui/toolbar';
 import { buildDecorations } from '../src/view/decorations';
 import { setVisualState, visualExtension } from '../src/view/visual-editor';
@@ -23,13 +24,13 @@ const flatten = (tokens: Token[]): Token[] => {
   return out;
 };
 
-const mount = (doc: string, anchor = 0) => {
+const mount = (doc: string, anchor = 0, language: 'latex' | 'typst' = 'latex') => {
   const view = new EditorView({
     state: EditorState.create({ doc, selection: { anchor }, extensions: [visualExtension()] }),
     parent: document.body
   });
   view.dispatch({
-    effects: setVisualState.of({ enabled: true, language: 'latex', showCommands: false, maxDepth: 12 })
+    effects: setVisualState.of({ enabled: true, language, showCommands: false, maxDepth: 12 })
   });
   return view;
 };
@@ -80,7 +81,7 @@ describe('table content nesting', () => {
 
     while (cursor.value) {
       const spec = cursor.value.spec as { class?: string; attributes?: Record<string, string> };
-      if (spec.class === 'cm-lv-cell') {
+      if (spec.class?.includes('cm-lv-cell')) {
         const at = latex.table!.locate!(doc, table, cursor.from)!;
         const widths = byColumn.get(at.col) ?? new Set<string>();
         widths.add(spec.attributes!.style);
@@ -91,8 +92,283 @@ describe('table content nesting', () => {
 
     expect(byColumn.size).toBe(2);
     expect([...byColumn.values()].every(widths => widths.size === 1)).toBe(true);
-    expect(byColumn.get(0)!.has('min-width:6ch')).toBe(true);
-    expect(byColumn.get(1)!.has('min-width:5ch')).toBe(true);
+    expect([...byColumn.get(0)!].every(value => value.includes('--lv-cell-width:6ch'))).toBe(true);
+    expect([...byColumn.get(1)!].every(value => value.includes('--lv-cell-width:6ch'))).toBe(true);
+  });
+});
+
+
+describe('table variants', () => {
+  const latexTable = (doc: string) =>
+    new Tokenizer(latex).tokenize(doc).find(token => token.kind === 'table')!;
+
+  it.each([
+    ['tabular*', ['\\begin{tabular*}{\\textwidth}{lc}', 'A & B \\\\', '\\end{tabular*}'].join('\n')],
+    ['tabularx', ['\\begin{tabularx}{\\textwidth}{lX}', 'A & B \\\\', '\\end{tabularx}'].join('\n')],
+    ['tabulary', ['\\begin{tabulary}{\\textwidth}{LJ}', 'A & B \\\\', '\\end{tabulary}'].join('\n')],
+    ['xltabular', ['\\begin{xltabular}{\\textwidth}{lX}', 'A & B \\\\', '\\end{xltabular}'].join('\n')],
+    ['longtable', ['\\begin{longtable}{lc}', 'A & B \\\\', '\\end{longtable}'].join('\n')],
+    ['NiceTabular', ['\\begin{NiceTabular}{lc}', 'A & B \\\\', '\\end{NiceTabular}'].join('\n')],
+    ['NiceTabular*', ['\\begin{NiceTabular*}{\\textwidth}{lc}', 'A & B \\\\', '\\end{NiceTabular*}'].join('\n')],
+    ['NiceTabularX', ['\\begin{NiceTabularX}{\\textwidth}{lX}', 'A & B \\\\', '\\end{NiceTabularX}'].join('\n')],
+    ['tblr', ['\\begin{tblr}{colspec={lX},width=\\linewidth}', 'A & B \\\\', '\\end{tblr}'].join('\n')],
+    ['longtblr', ['\\begin{longtblr}{colspec={lX}}', 'A & B \\\\', '\\end{longtblr}'].join('\n')]
+  ])('recognizes %s as a visual table', (_name, doc) => {
+    const token = latexTable(doc);
+    expect(token).toBeDefined();
+    expect(latex.table!.parse(doc, token)).toEqual([['A', 'B']]);
+  });
+
+  it('ignores row-rule commands and respects nested or escaped separators', () => {
+    const doc = [
+      '\\begin{longtable}{ll}',
+      '\\toprule',
+      'Name & Note \\\\',
+      '\\midrule',
+      'A \\& B & \\textbf{left \\& right} \\\\',
+      '\\bottomrule',
+      '\\end{longtable}'
+    ].join('\n');
+    const token = latexTable(doc);
+
+    expect(latex.table!.parse(doc, token)).toEqual([
+      ['Name', 'Note'],
+      ['A \\& B', '\\textbf{left \\& right}']
+    ]);
+  });
+
+  it('treats longtable metadata as structure, not cell content', () => {
+    const doc = [
+      '\\begin{longtable}{ll}',
+      '\\caption{Results}\\label{tab:results}\\\\',
+      '\\toprule',
+      'Name & Value \\\\',
+      '\\midrule',
+      'A & B \\\\',
+      '\\bottomrule',
+      '\\end{longtable}'
+    ].join('\n');
+    const token = latexTable(doc);
+    const ranges = latex.table!.ranges!(doc, token);
+
+    expect(latex.table!.parse(doc, token)).toEqual([
+      ['Name', 'Value'],
+      ['A', 'B']
+    ]);
+    expect(ranges[0].every(cell => cell.header)).toBe(true);
+    expect(latex.table!.editable!(doc, token)).toBe(false);
+  });
+
+  it('marks a booktabs heading row without assuming every first row is a header', () => {
+    const doc = [
+      '\\begin{tabular}{ll}',
+      '\\toprule',
+      'Name & Value \\\\',
+      '\\midrule',
+      'A & B \\\\',
+      '\\bottomrule',
+      '\\end{tabular}'
+    ].join('\n');
+    const token = latexTable(doc);
+    const ranges = latex.table!.ranges!(doc, token);
+
+    expect(ranges[0].every(cell => cell.header)).toBe(true);
+    expect(ranges[1].some(cell => cell.header)).toBe(false);
+    expect(latex.table!.editable!(doc, token)).toBe(false);
+  });
+
+  it('keeps wide table families visually wider while retaining text cells', () => {
+    const doc = ['intro', '', '\\begin{tabularx}{\\textwidth}{lX}', 'A & B \\\\', '\\end{tabularx}'].join('\n');
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const { decorations } = buildDecorations(state, { language: latex, showCommands: false });
+    const widths: string[] = [];
+    const cursor = decorations.iter();
+
+    while (cursor.value) {
+      const spec = cursor.value.spec as { class?: string; attributes?: Record<string, string> };
+      if (spec.class?.includes('cm-lv-cell')) widths.push(spec.attributes!.style);
+      cursor.next();
+    }
+
+    expect(widths).toHaveLength(2);
+    expect(widths.every(value => value.includes('--lv-cell-width:10ch'))).toBe(true);
+  });
+
+  it('resizes simple LaTeX column specifications when toolbar columns change', () => {
+    const doc = ['\\begin{tabularx}{\\textwidth}{lX}', 'A & B \\\\', '\\end{tabularx}'].join('\n');
+    const token = latexTable(doc);
+    const cells = latex.table!.parse(doc, token);
+    cells[0].push('C');
+
+    const serialized = latex.table!.serialize(cells, token, doc.slice(token.from, token.to));
+    expect(serialized).toContain('{lXX}');
+    expect(serialized).toContain('A & B & C');
+  });
+
+  it('does not split an outer LaTeX cell on separators inside a nested environment', () => {
+    const doc = [
+      '\\begin{tabular}{ll}',
+      'A & \\begin{tabular}{cc}x & y \\\\ z & q\\end{tabular} \\\\',
+      'B & C \\\\',
+      '\\end{tabular}'
+    ].join('\n');
+    const token = latexTable(doc);
+
+    expect(latex.table!.parse(doc, token)).toEqual([
+      ['A', '\\begin{tabular}{cc}x & y \\\\ z & q\\end{tabular}'],
+      ['B', 'C']
+    ]);
+  });
+
+  it('tracks multicolumn spans without enabling destructive table mutation', () => {
+    const doc = [
+      '\\begin{tabular}{lll}',
+      '\\multicolumn{2}{c}{Wide} & C \\\\',
+      'A & B & C \\\\',
+      '\\end{tabular}'
+    ].join('\n');
+    const token = latexTable(doc);
+    const ranges = latex.table!.ranges!(doc, token);
+
+    expect(ranges[0][0].colspan).toBe(2);
+    expect(latex.table!.editable!(doc, token)).toBe(false);
+  });
+
+  it('adds explicit row/cell decorations with consistent column widths', () => {
+    const doc = ['intro', '', '\\begin{tabular}{ll}', 'A & Longer value \\\\', 'BBBB & C \\\\', '\\end{tabular}'].join('\n');
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const { decorations } = buildDecorations(state, { language: latex, showCommands: false });
+    const classes: string[] = [];
+    const widths = new Map<number, Set<string>>();
+    const token = latexTable(doc);
+    const cursor = decorations.iter();
+
+    while (cursor.value) {
+      const spec = cursor.value.spec as { class?: string; attributes?: Record<string, string> };
+      if (spec.class) classes.push(spec.class);
+      if (spec.class?.includes('cm-lv-cell')) {
+        const at = latex.table!.locate!(doc, token, cursor.from)!;
+        const column = widths.get(at.col) ?? new Set<string>();
+        column.add(spec.attributes!.style);
+        widths.set(at.col, column);
+      }
+      cursor.next();
+    }
+
+    expect(classes.some(value => value.includes('cm-lv-table-row'))).toBe(true);
+    expect(widths.size).toBe(2);
+    expect([...widths.values()].every(value => value.size === 1)).toBe(true);
+  });
+});
+
+describe('Typst tables and grids', () => {
+  const typstTable = (doc: string) =>
+    new Tokenizer(typst).tokenize(doc).find(token => token.kind === 'table')!;
+
+  it('lays out a normal Typst table as editable visual cells', () => {
+    const table = [
+      '#table(',
+      '  columns: 2,',
+      '  [Name], [Value],',
+      '  [Alpha], [$ beta $],',
+      ')'
+    ].join('\n');
+    const doc = `intro\n\n${table}`;
+    const token = typstTable(doc);
+
+    expect(typst.table!.parse(doc, token)).toEqual([
+      ['Name', 'Value'],
+      ['Alpha', '$ beta $']
+    ]);
+    expect(typst.table!.editable!(doc, token)).toBe(true);
+
+    const view = mount(doc, 0, 'typst');
+    expect(view.contentDOM.querySelectorAll('.cm-lv-cell')).toHaveLength(4);
+    expect(view.contentDOM.querySelectorAll('.cm-lv-math')).toHaveLength(1);
+    expect(view.contentDOM.textContent).not.toContain('columns: 2');
+  });
+
+  it('supports track-list columns, headers, and spanning cells', () => {
+    const doc = [
+      '#table(',
+      '  columns: (1fr, auto, 2fr),',
+      '  table.header([Name], [Age], [Score]),',
+      '  [Ada], [36], [10],',
+      '  table.cell(colspan: 2)[Total], [10],',
+      ')'
+    ].join('\n');
+    const token = typstTable(doc);
+    const ranges = typst.table!.ranges!(doc, token);
+
+    expect(ranges).toHaveLength(3);
+    expect(ranges[0].every(cell => cell.header)).toBe(true);
+    expect(ranges[2][0].colspan).toBe(2);
+    expect(typst.table!.editable!(doc, token)).toBe(false);
+  });
+
+  it('accepts Typst cell content passed as a positional function argument', () => {
+    const doc = '#grid(columns: 3, grid.cell(colspan: 2, image("x.png")), [C])';
+    const token = typstTable(doc);
+    const ranges = typst.table!.ranges!(doc, token);
+
+    expect(typst.table!.parse(doc, token)).toEqual([['image("x.png")', 'C']]);
+    expect(ranges[0][0].colspan).toBe(2);
+    expect(ranges[0][1].column).toBe(2);
+  });
+
+  it('honors manual Typst x/y cell placement', () => {
+    const doc = '#table(columns: 2, table.cell(x: 1, y: 1, [X]), [A], [B])';
+    const token = typstTable(doc);
+    const ranges = typst.table!.ranges!(doc, token);
+
+    expect(ranges[0].map(cell => cell.column)).toEqual([0, 1]);
+    expect(ranges[1][0].column).toBe(1);
+  });
+
+  it('places cells after a rowspan in the next free visual column', () => {
+    const doc = [
+      '#table(',
+      '  columns: 2,',
+      '  table.cell(rowspan: 2)[A], [B],',
+      '  [C],',
+      ')'
+    ].join('\n');
+    const state = EditorState.create({ doc, selection: { anchor: 0 } });
+    const { decorations } = buildDecorations(state, { language: typst, showCommands: false });
+    const columns: string[] = [];
+    const cursor = decorations.iter();
+
+    while (cursor.value) {
+      const spec = cursor.value.spec as { class?: string; attributes?: Record<string, string> };
+      if (spec.class?.includes('cm-lv-cell')) columns.push(spec.attributes!['data-lv-column']);
+      cursor.next();
+    }
+
+    expect(columns).toEqual(['0', '1', '1']);
+  });
+
+  it('supports Typst grid with the same visual table adapter', () => {
+    const doc = ['#grid(', '  columns: 2,', '  [A], [B],', '  [C], [D],', ')'].join('\n');
+    const token = typstTable(doc);
+
+    expect(token.name).toBe('grid');
+    expect(typst.table!.parse(doc, token)).toEqual([
+      ['A', 'B'],
+      ['C', 'D']
+    ]);
+  });
+
+  it('preserves simple Typst table options while toolbar edits rows and columns', () => {
+    const doc = ['#table(', '  columns: 2,', '  inset: 6pt,', '  [A], [B],', '  [C], [D],', ')'].join('\n');
+    const token = typstTable(doc);
+    const cells = typst.table!.parse(doc, token);
+    cells[0].push('E');
+    cells[1].push('F');
+
+    const serialized = typst.table!.serialize(cells, token, doc.slice(token.from, token.to));
+    expect(serialized).toContain('columns: 3');
+    expect(serialized).toContain('inset: 6pt');
+    expect(serialized).toContain('[A], [B], [E]');
   });
 });
 

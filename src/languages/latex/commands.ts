@@ -2,7 +2,7 @@ export const EDITABLE_COMMANDS = new Set([
   'textbf', 'textit', 'emph', 'underline', 'textsc', 'textsf', 'texttt',
   'section', 'subsection', 'subsubsection', 'title', 'author', 'date',
   'footnote', 'cite', 'citeyear', 'citep', 'citey', 'ref', 'label', 'url', 'href',
-  'textcolor', 'color', 'colorbox', 'fcolorbox'
+  'textcolor', 'color', 'colorbox', 'fcolorbox', 'multicolumn', 'multirow'
 ]);
 
 export const FORMATTING_COMMANDS = new Map([
@@ -35,6 +35,22 @@ export const HEADING_LEVELS = new Map([
 ]);
 
 export const LIST_ENVIRONMENTS = new Set(['itemize', 'enumerate', 'description']);
+
+export const TABLE_ENVIRONMENT_ARGS = new Map<string, number>([
+  ['tabular', 1],
+  ['tabular*', 2],
+  ['tabularx', 2],
+  ['tabulary', 2],
+  ['xltabular', 2],
+  ['longtable', 1],
+  ['NiceTabular', 1],
+  ['NiceTabular*', 2],
+  ['NiceTabularX', 2],
+  ['tblr', 1],
+  ['longtblr', 1]
+]);
+
+export const TABLE_ENVIRONMENTS = new Set(TABLE_ENVIRONMENT_ARGS.keys());
 
 export const VERBATIM_ENVIRONMENTS = new Set(['verbatim', 'lstlisting', 'minted', 'Verbatim']);
 

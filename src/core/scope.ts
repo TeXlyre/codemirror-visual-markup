@@ -7,13 +7,15 @@ export interface EditorScope {
   inTable: boolean;
   inColor: boolean;
   table?: Token;
+  tableEditable?: boolean;
   color?: Token;
 }
 
 export const EMPTY_SCOPE: EditorScope = { inTable: false, inColor: false };
 
 export function scopeAt(state: EditorState, pos: number, language: Language): EditorScope {
-  const tokens = new Tokenizer(language).tokenize(state.doc.toString());
+  const source = state.doc.toString();
+  const tokens = new Tokenizer(language).tokenize(source);
   const scope: EditorScope = { inTable: false, inColor: false };
   const colors = language.colorCommands ?? [];
 
@@ -24,6 +26,7 @@ export function scopeAt(state: EditorState, pos: number, language: Language): Ed
       if (token.kind === 'table') {
         scope.inTable = true;
         scope.table = token;
+        scope.tableEditable = language.table?.editable?.(source, token) ?? true;
       }
       if (token.kind === 'command' && token.name && colors.includes(token.name)) {
         scope.inColor = true;

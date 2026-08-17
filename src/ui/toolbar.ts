@@ -92,7 +92,12 @@ export class Toolbar {
 
   private refreshScope(force = false): void {
     const next = scopeAt(this.view.state, this.view.state.selection.main.head, this.language);
-    if (!force && next.inTable === this.scope.inTable && next.inColor === this.scope.inColor) {
+    if (
+      !force &&
+      next.inTable === this.scope.inTable &&
+      next.tableEditable === this.scope.tableEditable &&
+      next.inColor === this.scope.inColor
+    ) {
       this.scope = next;
       return;
     }

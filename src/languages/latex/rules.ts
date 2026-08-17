@@ -1,7 +1,7 @@
 import { Rule } from '../../core/language';
 import { Range, Token } from '../../core/tokens';
 import { inner, isEscaped, matchDelimited, matchFenced, matchLine, skipSpace } from '../../core/scanner';
-import { ARGUMENT_COUNT, ESCAPABLE, HEADING_LEVELS, MATH_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
+import { ARGUMENT_COUNT, ESCAPABLE, HEADING_LEVELS, MATH_ENVIRONMENTS, TABLE_ENVIRONMENT_ARGS, TABLE_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
 
 const MATH_DELIMITERS: Array<[string, string, boolean]> = [
   ['$$', '$$', true],
@@ -47,10 +47,16 @@ export const environment: Rule = (source, pos, ctx) => {
   const end = findMatchingEnd(source, pos + header[0].length, name);
   if (end === -1) return null;
 
-  const headerArgs = consumeArguments(source, pos + header[0].length);
+  const tableArgs = TABLE_ENVIRONMENT_ARGS.get(name);
+  const headerArgs = consumeArguments(
+    source,
+    pos + header[0].length,
+    tableArgs,
+    tableArgs !== undefined
+  );
 
   const token: Token = {
-    kind: name === 'tabular' || name === 'tabularx' ? 'table' : 'container',
+    kind: TABLE_ENVIRONMENTS.has(name) ? 'table' : 'container',
     name,
     from: pos,
     to: end + `\\end{${name}}`.length,
@@ -130,7 +136,12 @@ export const command: Rule = (source, pos, ctx) => {
 
 export const rules: Rule[] = [comment, math, environment, heading, item, escape, command];
 
-function consumeArguments(source: string, pos: number, limit?: number): { args: Range[]; to: number } {
+function consumeArguments(
+  source: string,
+  pos: number,
+  limit?: number,
+  trailingOptional = false
+): { args: Range[]; to: number } {
   const args: Range[] = [];
   let cursor = pos;
 
@@ -145,6 +156,15 @@ function consumeArguments(source: string, pos: number, limit?: number): { args: 
     if (!braces) break;
     args.push(inner(braces, 1, 1));
     cursor = braces.to;
+  }
+
+  if (trailingOptional) {
+    while (true) {
+      const next = skipSpace(source, cursor, true);
+      const optional = matchDelimited(source, next, '[');
+      if (!optional) break;
+      cursor = optional.to;
+    }
   }
 
   return { args, to: cursor };

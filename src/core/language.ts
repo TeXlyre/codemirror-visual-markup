@@ -39,11 +39,20 @@ export interface CellPosition {
   col: number;
 }
 
+export interface TableCellRange extends Range {
+  colspan?: number;
+  rowspan?: number;
+  header?: boolean;
+  column?: number;
+  row?: number;
+}
+
 export interface TableAdapter {
   parse(source: string, token: Token): string[][];
   serialize(cells: string[][], token: Token, source: string): string;
-  ranges?(source: string, token: Token): Range[][];
+  ranges?(source: string, token: Token): TableCellRange[][];
   locate?(source: string, token: Token, pos: number): CellPosition | null;
+  editable?(source: string, token: Token): boolean;
 }
 
 export interface Language {

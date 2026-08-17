@@ -1,8 +1,9 @@
 import { cssColor } from '../../core/color';
-import { registerLanguage, Language, LanguageCommands, TableAdapter, TokenStyle } from '../../core/language';
-import { Range, Token } from '../../core/tokens';
+import { registerLanguage, Language, LanguageCommands, TokenStyle } from '../../core/language';
+import { Token } from '../../core/tokens';
 import { ARGUMENT_COUNT, COMMAND_CLASSES, EDITABLE_COMMANDS, LIST_ENVIRONMENTS, VERBATIM_ENVIRONMENTS } from './commands';
 import { rules } from './rules';
+import { table } from './table';
 
 const commands: LanguageCommands = {
   wrap: {
@@ -37,67 +38,6 @@ const commands: LanguageCommands = {
   }
 };
 
-const table: TableAdapter = {
-  parse(source, token) {
-    const body = token.body ? source.slice(token.body.from, token.body.to) : '';
-    return body
-      .split('\\\\')
-      .map(row => row.replace(/\\hline/g, '').trim())
-      .filter(Boolean)
-      .map(row => row.split('&').map(cell => cell.trim()));
-  },
-  ranges(source, token) {
-    if (!token.body) return [];
-
-    const rows: Range[][] = [];
-    let cells: Range[] = [];
-    let cursor = token.body.from;
-    let start = cursor;
-
-    const push = (end: number) => cells.push({ from: start, to: end });
-
-    while (cursor < token.body.to) {
-      if (source.startsWith('\\\\', cursor)) {
-        push(cursor);
-        rows.push(cells);
-        cells = [];
-        cursor += 2;
-        start = cursor;
-        continue;
-      }
-      if (source[cursor] === '&') {
-        push(cursor);
-        cursor += 1;
-        start = cursor;
-        continue;
-      }
-      cursor += source[cursor] === '\\' ? 2 : 1;
-    }
-
-    if (cursor > start && source.slice(start, token.body.to).trim()) push(token.body.to);
-    if (cells.length) rows.push(cells);
-
-    return rows;
-  },
-  locate(source, token, pos) {
-    const rows = table.ranges!(source, token);
-
-    for (let row = 0; row < rows.length; row++) {
-      for (let col = 0; col < rows[row].length; col++) {
-        if (pos >= rows[row][col].from && pos <= rows[row][col].to) return { row, col };
-      }
-    }
-
-    return null;
-  },
-  serialize(cells, token, text) {
-    const offset = token.from;
-    const prefix = text.slice(0, (token.body?.from ?? token.to) - offset);
-    const suffix = text.slice((token.body?.to ?? token.to) - offset);
-    const body = cells.map(row => `  ${row.join(' & ')} \\\\`).join('\n');
-    return `${prefix}\n${body}\n${suffix}`;
-  }
-};
 
 function style(token: Token): TokenStyle | null {
   switch (token.kind) {

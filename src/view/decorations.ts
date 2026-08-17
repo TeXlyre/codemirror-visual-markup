@@ -136,7 +136,7 @@ export function buildDecorations(state: EditorState, options: BuildOptions): Bui
       }
 
       if (token.kind === 'table' && !options.showCommands && !inScope) {
-        layoutTable(state, source, options.language, token, decorations, replaced, hide);
+        layoutTable(state, source, options.language, token, decorations, hide);
       }
 
       if (token.children && !style.keepSyntax) emit(token.children);
@@ -198,56 +198,137 @@ function layoutTable(
   language: Language,
   token: Token,
   decorations: CMRange<Decoration>[],
-  replaced: Range[],
   hide: (from: number, to: number) => void
 ): void {
   const rows = language.table?.ranges?.(source, token);
-  if (!rows || !token.body) return;
+  if (!rows?.length || !token.body) return;
 
   const widths: number[] = [];
-  for (const row of rows) {
-    row.forEach((cell, column) => {
-      widths[column] = Math.max(widths[column] ?? 0, trim(source, cell).length);
-    });
-  }
+  const positions = new Map<Range, { row: number; cell: number; column: number }>();
+  const occupied: number[] = [];
+  let columnCount = 0;
 
+  rows.forEach((row, rowIndex) => {
+    let column = 0;
+    row.forEach((cell, cellIndex) => {
+      if (cell.column !== undefined) column = cell.column;
+      else while ((occupied[column] ?? 0) > 0) column++;
+
+      const colspan = Math.max(1, cell.colspan ?? 1);
+      const rowspan = Math.max(1, cell.rowspan ?? 1);
+      positions.set(cell, { row: rowIndex, cell: cellIndex, column });
+      columnCount = Math.max(columnCount, column + colspan);
+
+      if (rowspan > 1) {
+        for (let offset = 0; offset < colspan; offset++) {
+          occupied[column + offset] = Math.max(occupied[column + offset] ?? 0, rowspan);
+        }
+      }
+      column += colspan;
+    });
+
+    for (let index = 0; index < occupied.length; index++) {
+      if (occupied[index] > 0) occupied[index]--;
+    }
+  });
+
+  const minWidth = tableMinColumnWidth(source, token, columnCount);
+  rows.forEach(row => {
+    row.forEach(cell => {
+      const position = positions.get(cell);
+      if (!position) return;
+      const span = Math.max(1, cell.colspan ?? 1);
+      const width = Math.max(minWidth, Math.ceil(measureCell(source, cell) / span));
+      for (let offset = 0; offset < span; offset++) {
+        widths[position.column + offset] = Math.max(widths[position.column + offset] ?? minWidth, width);
+      }
+    });
+  });
+
+  rows.forEach((row, rowIndex) => {
+    if (!row.length) return;
+    const first = state.doc.lineAt(row[0].from);
+    const last = state.doc.lineAt(Math.max(row[0].from, row[row.length - 1].to));
+    const header = row.every(cell => cell.header);
+
+    for (let number = first.number; number <= last.number; number++) {
+      const line = state.doc.line(number);
+      const classes = [
+        'cm-lv-table-row',
+        rowIndex === 0 ? 'cm-lv-table-row-first' : '',
+        rowIndex === rows.length - 1 ? 'cm-lv-table-row-last' : '',
+        rowIndex % 2 === 1 ? 'cm-lv-table-row-alt' : '',
+        header ? 'cm-lv-table-row-header' : ''
+      ].filter(Boolean).join(' ');
+      decorations.push(Decoration.line({ class: classes }).range(line.from));
+    }
+  });
+
+  const cells = rows.flat();
   let previous = token.body.from;
 
-  for (const row of rows) {
-    row.forEach((cell, column) => {
-      if (cell.from > previous) separate(state, decorations, replaced, previous, cell.from);
+  const nextColumn = new Map<number, number>();
+  for (const cell of cells) {
+    if (cell.from > previous) hide(previous, cell.from);
 
-      const content = trim(source, cell);
-      if (content.to > content.from) {
-        decorations.push(
-          Decoration.mark({
-            class: 'cm-lv-cell',
-            attributes: { style: `min-width:${widths[column]}ch` }
-          }).range(content.from, content.to)
-        );
-      }
+    const content = trim(source, cell);
+    if (content.to > content.from) {
+      const position = positions.get(cell) ?? { row: 0, cell: 0, column: 0 };
+      const row = rows[position.row];
+      const span = Math.max(1, cell.colspan ?? 1);
+      const width = widths
+        .slice(position.column, position.column + span)
+        .reduce((sum, value) => sum + (value ?? minWidth), 0);
+      const before = nextColumn.get(position.row) ?? 0;
+      const offset = widths
+        .slice(before, position.column)
+        .reduce((sum, value) => sum + (value ?? minWidth), 0);
+      nextColumn.set(position.row, position.column + span);
+      const classes = [
+        'cm-lv-cell',
+        cell.header ? 'cm-lv-cell-header' : '',
+        position.cell === 0 ? 'cm-lv-cell-first' : '',
+        position.cell === row.length - 1 ? 'cm-lv-cell-last' : '',
+        offset > 0 ? 'cm-lv-cell-gap' : ''
+      ].filter(Boolean).join(' ');
+      decorations.push(
+        Decoration.mark({
+          class: classes,
+          attributes: {
+            style: `--lv-cell-width:${Math.min(42, Math.max(minWidth, width))}ch;--lv-cell-offset:${offset}ch`,
+            'data-lv-column': String(position.column),
+            'data-lv-colspan': String(span),
+            'data-lv-rowspan': String(Math.max(1, cell.rowspan ?? 1))
+          }
+        }).range(content.from, content.to)
+      );
+    }
 
-      previous = cell.to;
-    });
+    previous = Math.max(previous, cell.to);
   }
 
   hide(previous, token.body.to);
 }
 
-function separate(
-  state: EditorState,
-  decorations: CMRange<Decoration>[],
-  replaced: Range[],
-  from: number,
-  to: number
-): void {
-  const line = state.doc.lineAt(from);
-  const end = Math.min(to, line.to);
-
-  if (end > from) {
-    decorations.push(Decoration.replace({ widget: new MarkerWidget('', 'cm-lv-col-sep') }).range(from, end));
-    replaced.push({ from, to: end });
+function tableMinColumnWidth(source: string, token: Token, columns: number): number {
+  if (columns > 6) return 6;
+  const wideLatex = new Set(['tabular*', 'tabularx', 'tabulary', 'xltabular', 'NiceTabular*', 'NiceTabularX']);
+  if (wideLatex.has(token.name ?? '')) return 10;
+  if ((token.name === 'table' || token.name === 'grid') && token.body) {
+    const body = source.slice(token.body.from, token.body.to);
+    if (/\bcolumns\s*:\s*\([^)]*\b(?:\d+(?:\.\d+)?)?fr\b/.test(body)) return 10;
   }
+  return 6;
+}
+
+function measureCell(source: string, range: Range): number {
+  const text = source
+    .slice(range.from, range.to)
+    .replace(/\\[a-zA-Z]+\*?/g, '')
+    .replace(/[#{}\[\]*_$]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return Math.max(1, text.length);
 }
 
 function trim(source: string, range: Range): Range & { length: number } {

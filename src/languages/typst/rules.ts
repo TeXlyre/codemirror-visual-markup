@@ -211,6 +211,7 @@ export const rules: Rule[] = [
   inMode('code', namedArgument),
   inMode('code', separator),
   inMode('code', contentBlock),
+  inMode('code', math),
   inMode('code', call),
   inMode('markup', raw),
   inMode('markup', heading),

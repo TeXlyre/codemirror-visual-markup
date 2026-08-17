@@ -2,6 +2,7 @@ import { cssColor } from '../../core/color';
 import { registerLanguage, Language, LanguageCommands, TokenStyle } from '../../core/language';
 import { Token } from '../../core/tokens';
 import { rules } from './rules';
+import { table } from './table';
 
 const CLASSES = new Map([
   ['strong', 'cm-lv-bold'],
@@ -43,6 +44,7 @@ const commands: LanguageCommands = {
   }
 };
 
+
 function style(token: Token): TokenStyle | null {
   switch (token.kind) {
     case 'comment':
@@ -60,7 +62,7 @@ function style(token: Token): TokenStyle | null {
     case 'container':
       return { class: 'cm-lv-content' };
     case 'table':
-      return { class: 'cm-lv-cmd', keepSyntax: true };
+      return { class: 'cm-lv-table', block: true };
     case 'command': {
       if (token.name === 'image') return { widget: 'image' };
       if (token.meta?.statement) return { class: 'cm-lv-cmd-unknown', keepSyntax: true };
@@ -89,6 +91,7 @@ export const typst: Language = {
   rules,
   style,
   commands,
+  table,
   colorCommands: ['text', 'highlight'],
   imageSrc(source, token) {
     const args = token.args?.[0];

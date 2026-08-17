@@ -118,7 +118,7 @@ export function createColorItem(language: Language, kind: 'text' | 'background',
 }
 
 export function tableScopeEntries(language: Language, scope: EditorScope): ToolbarEntry[] {
-  if (!scope.table || !language.table?.locate) return [];
+  if (!scope.table || scope.tableEditable === false || !language.table?.locate) return [];
 
   const mutate = (key: string, label: string, apply: (cells: string[][], at: { row: number; col: number }) => void) => ({
     key: `${language.id}-table-${key}`,

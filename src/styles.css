@@ -225,25 +225,85 @@
 }
 
 .cm-lv-table {
-  background: color-mix(in srgb, var(--lv-table) 4%, transparent);
-  border-left: 3px solid var(--lv-table);
+  background: transparent;
+}
+
+.cm-lv-table-row {
+  width: max-content;
+  min-width: max-content;
+  min-height: 2.3em;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .cm-lv-cell {
-  display: inline-block;
+  display: inline-flex;
   box-sizing: border-box;
-  padding: 0.15em 0.5em;
-  margin-right: -1px;
-  vertical-align: middle;
-  border: 1px solid color-mix(in srgb, var(--lv-table) 32%, var(--lv-border));
-  background: color-mix(in srgb, var(--lv-table) 3%, transparent);
+  width: var(--lv-cell-width, 8ch);
+  min-height: 2.3em;
+  padding: 0.4em 0.7em;
+  align-items: center;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 1px solid color-mix(in srgb, var(--lv-table) 38%, var(--lv-border));
+  border-left: 0;
+  margin-left: var(--lv-cell-offset, 0ch);
+  background: color-mix(in srgb, var(--lv-table) 2%, var(--lv-bg));
+}
+
+.cm-lv-cell-first,
+.cm-lv-cell-gap {
+  border-left: 1px solid color-mix(in srgb, var(--lv-table) 38%, var(--lv-border));
+}
+
+.cm-lv-table-row:not(.cm-lv-table-row-first) .cm-lv-cell {
+  border-top: 0;
+}
+
+.cm-lv-table-row-alt .cm-lv-cell {
+  background: color-mix(in srgb, var(--lv-table) 4%, var(--lv-bg));
+}
+
+.cm-lv-table-row-first .cm-lv-cell-first {
+  border-top-left-radius: 5px;
+}
+
+.cm-lv-table-row-first .cm-lv-cell-last {
+  border-top-right-radius: 5px;
+}
+
+.cm-lv-table-row-last .cm-lv-cell-first {
+  border-bottom-left-radius: 5px;
+}
+
+.cm-lv-table-row-last .cm-lv-cell-last {
+  border-bottom-right-radius: 5px;
+}
+
+.cm-lv-cell-header,
+.cm-lv-table-row-header .cm-lv-cell {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--lv-table) 12%, var(--lv-bg));
+  border-bottom-color: color-mix(in srgb, var(--lv-table) 52%, var(--lv-border));
+}
+
+.cm-lv-cell[data-lv-colspan]:not([data-lv-colspan="1"]) {
+  justify-content: center;
+}
+
+.cm-lv-table-row .cm-lv-math-display {
+  width: 100%;
+  padding: 0.15em 0;
+  margin: 0;
+}
+
+.cm-lv-table-row .cm-lv-image {
+  max-width: 100%;
 }
 
 .cm-lv-col-sep {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  margin: 0;
+  display: none;
 }
 
 .cm-lv-syntax-line {
