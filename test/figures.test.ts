@@ -1,6 +1,8 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { setVisualState, visualExtension } from '../src/view/visual-editor';
+import '../src/languages/latex';
+import '../src/languages/typst';
 import '../src/view/widgets';
 
 const mount = (doc: string, language: 'latex' | 'typst' = 'latex') => {
