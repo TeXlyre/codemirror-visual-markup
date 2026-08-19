@@ -1,5 +1,11 @@
 # CodeMirror 6 Visual Markup Support
 
+![Status: Experimental](https://img.shields.io/badge/status-experimental-red)
+
+> [!WARNING]
+> This repository is experimental.
+> Expect breaking changes and unstable APIs.
+
 This package provides visual (WYSIWYM) editing for LaTeX and Typst in the [CodeMirror 6](https://codemirror.net/6/) editor.
 
 Visual mode decorates the live CodeMirror document instead of maintaining a separate editable DOM tree. The source remains authoritative, and edits are applied as normal CodeMirror transactions.
